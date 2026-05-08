@@ -24,7 +24,7 @@ Dieses Repo sammelt Spielmechaniken, die auf dem Basisprotokoll aufbauen können
 
 ## Gehört ins Basisprotokoll
 
-Diese Begriffe bleiben im `real-life-network-protocol`, weil sie für Interoperabilität gebraucht werden:
+Diese Begriffe bleiben im [real-life-org/real-life-network-protocol](https://github.com/real-life-org/real-life-network-protocol), weil sie für Interoperabilität gebraucht werden:
 
 - Quest,
 - Quest-Autor,

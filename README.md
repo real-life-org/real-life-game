@@ -17,10 +17,10 @@ Ziel ist nicht, ein klassisches Spiel zu gewinnen. Ziel ist WinWinWin:
 
 | Ebene | Repo | Aufgabe |
 |---|---|---|
-| Identität und Vertrauen | `wot-spec` | DIDs, QR-Verifikation, Kontakte, Attestations |
-| App- und Datenbasis | `real-life-stack` | Spaces, generische Items, Profile, Karte, Kalender, Feed |
-| Netzwerkprotokoll | `real-life-network-protocol` | soziale Operationen, Quests als reale Einladungen, Badges als Attestations |
-| Spielgestaltung | `real-life-game` | Storylines, Progression, Spielmodi, Adventures, Rollen, Balancing, UI-Gefühl |
+| Identität und Vertrauen | [real-life-org/wot-spec](https://github.com/real-life-org/wot-spec) | DIDs, QR-Verifikation, Kontakte, Attestations |
+| App- und Datenbasis | [real-life-org/real-life-stack](https://github.com/real-life-org/real-life-stack) | Spaces, generische Items, Profile, Karte, Kalender, Feed |
+| Netzwerkprotokoll | [real-life-org/real-life-network-protocol](https://github.com/real-life-org/real-life-network-protocol) | soziale Operationen, Quests als reale Einladungen, Badges als Attestations |
+| Spielgestaltung | [real-life-org/real-life-game](https://github.com/real-life-org/real-life-game) | Storylines, Progression, Spielmodi, Adventures, Rollen, Balancing, UI-Gefühl |
 
 Eine Quest gehört sprachlich und technisch zuerst zum Real Life Network Protocol. Das Game benutzt Quests, rahmt sie aber zusätzlich durch Spielmechaniken.
 

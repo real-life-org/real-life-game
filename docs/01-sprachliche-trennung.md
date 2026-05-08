@@ -66,7 +66,7 @@ Das Game benutzt Quests als kleinste reale Handlungseinheit.
 
 ## Konsequenz für Sprache
 
-Im `real-life-network-protocol` sollten wir sagen:
+Im [real-life-org/real-life-network-protocol](https://github.com/real-life-org/real-life-network-protocol) sollten wir sagen:
 
 - Quest,
 - Completion,
@@ -78,7 +78,7 @@ Im `real-life-network-protocol` sollten wir sagen:
 - Author,
 - Fork.
 
-Im `real-life-game` können wir zusätzlich sagen:
+Im [real-life-org/real-life-game](https://github.com/real-life-org/real-life-game) können wir zusätzlich sagen:
 
 - Adventure,
 - Journey,
