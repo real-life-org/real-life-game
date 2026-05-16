@@ -1,7 +1,5 @@
 # Real Life Game
 
-**Zuletzt aktualisiert:** 2026-05-16
-
 Das Real Life Game ist ein kooperatives Spiel für das echte Leben.
 
 Es hilft Menschen, reale Aufgaben, Begegnungen, Fähigkeiten, Orte, Projekte und Beiträge als gemeinsames Spielfeld zu erleben. Eine Aufgabe kann zur Quest werden. Mehrere Quests können ein Adventure bilden. Viele Adventures, Orte und Gruppen können Teil einer Campaign werden. Was dadurch in der Welt passiert, wird als World State sichtbar.
