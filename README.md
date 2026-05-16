@@ -1,6 +1,5 @@
 # Real Life Game
 
-**Status:** menschenlesbares Konzept v0
 **Zuletzt aktualisiert:** 2026-05-16
 
 Das Real Life Game ist ein kooperatives Spiel für das echte Leben.
