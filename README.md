@@ -1,8 +1,8 @@
 # Real Life Game
 
-Das Real Life Game ist ein kooperatives Spiel für das echte Leben.
+Das Real Life Game ist ein kooperatives Spiel für das echte Leben. Es baut auf [Web of Trust](https://github.com/real-life-org/wot-spec), [Real Life Stack](https://github.com/real-life-org/real-life-stack) und [Real Life Network Protocol](https://github.com/real-life-org/real-life-network-protocol) auf.
 
-Es hilft Menschen, reale Aufgaben, Begegnungen, Fähigkeiten, Orte, Projekte und Beiträge als gemeinsames Spielfeld zu erleben. Eine Aufgabe kann zur Quest werden. Mehrere Quests können ein Adventure bilden. Viele Adventures, Orte und Gruppen können Teil einer Campaign werden. Was dadurch in der Welt passiert, wird als World State sichtbar.
+Es hilft Menschen, reale Aufgaben, Begegnungen, Fähigkeiten, Orte, Projekte und Beiträge als gemeinsames Spielfeld zu erleben. Eine Aufgabe kann zur Quest werden. Mehrere Quests können ein [Adventure](docs/07-adventure.md) bilden. Viele Adventures, Orte und Gruppen können Teil einer [Campaign](docs/08-campaign-und-world-state.md) werden. Was dadurch in der Welt passiert, wird als [World State](docs/08-campaign-und-world-state.md#world-state) sichtbar.
 
 Der Kern ist einfach:
 
@@ -50,10 +50,10 @@ Das Real Life Game baut auf drei tieferen Schichten auf.
 
 | Schicht | Aufgabe |
 |---|---|
-| Web of Trust | Identität, Kontakte, Verifikation und Attestations |
-| Real Life Stack | App-Basis, Spaces, Items, Karte, Kalender, Profile, Marktplatz |
-| Real Life Network Protocol | Quests, QuestRuns, Evidence, Completion, Attestation Policy, Badges |
-| Real Life Game | Game Packs, Entwicklungskarte, Adventures, Campaigns, World State |
+| [Web of Trust](https://github.com/real-life-org/wot-spec) | Identität, Kontakte, Verifikation und Attestations |
+| [Real Life Stack](https://github.com/real-life-org/real-life-stack) | App-Basis, Spaces, Items, Karte, Kalender, Profile, Marktplatz |
+| [Real Life Network Protocol](https://github.com/real-life-org/real-life-network-protocol) | Quests, QuestRuns, Evidence, Completion, Attestation Policy, Badges |
+| [Real Life Game](.) | Game Packs, Entwicklungskarte, Adventures, Campaigns, World State |
 
 Das Game erzeugt keine eigene Wahrheitsschicht. Es deutet und visualisiert das, was in den anderen Schichten sichtbar oder attestiert ist.
 
@@ -71,11 +71,11 @@ Beispiele:
 - "Führe ein Gespräch mit einer Person, die du noch nicht kennst."
 - "Erstelle ein Angebot im Marktplatz."
 
-Quests gehören zuerst zum Real Life Network Protocol. Sie müssen auch ohne vollständiges Spielsystem funktionieren.
+Quests gehören zuerst zum [Real Life Network Protocol](https://github.com/real-life-org/real-life-network-protocol/blob/main/05-quests/quest-mechanik.md). Sie müssen auch ohne vollständiges Spielsystem funktionieren. Die Trennung zwischen Quest und Game ist in der [sprachlichen Trennung](docs/01-sprachliche-trennung.md#quest) genauer beschrieben.
 
 ### Evidence und Attestation
 
-Wenn jemand eine Quest erledigt, kann er oder sie eine Spur hinterlassen: ein Foto, eine Notiz, ein QR-Scan, ein Systemereignis oder eine kurze Dokumentation. Das ist Evidence.
+Wenn jemand eine Quest erledigt, kann er oder sie eine Spur hinterlassen: ein Foto, eine Notiz, ein QR-Scan, ein Systemereignis oder eine kurze Dokumentation. Das ist Evidence. Die Completion-Logik liegt im [Real Life Network Protocol](https://github.com/real-life-org/real-life-network-protocol/blob/main/05-quests/quest-mechanik.md#10-completion-evidence-und-attestation).
 
 Evidence ist noch kein portabler Beleg.
 
@@ -95,7 +95,7 @@ Diese Attestations sind die Wahrheitsschicht. Das Spiel kann sie sichtbar machen
 
 ### Badge
 
-Ein Badge ist eine sichtbare Darstellung einer Attestation oder einer aus Attestations ableitbaren Anerkennung.
+Ein Badge ist eine sichtbare Darstellung einer Attestation oder einer aus Attestations ableitbaren Anerkennung. Die Game-Seite betrachtet Badges vor allem als Darstellung und grenzt sie im [Mechanik-Backlog](docs/03-mechanik-backlog.md#badge-zuerst-xp-später) von XP und Leveln ab.
 
 Ein Badge kann im Profil erscheinen, in einer Campaign sichtbar werden oder später als Avatar-Item dargestellt werden. Der Kern bleibt aber immer:
 
@@ -103,7 +103,7 @@ Ein Badge kann im Profil erscheinen, in einer Campaign sichtbar werden oder spä
 Badge = sichtbare Anerkennung, die auf einer Attestation beruht.
 ```
 
-### Game Pack
+### [Game Pack](docs/06-game-pack.md)
 
 Ein Game Pack definiert die Sprache und Darstellung einer Spielwelt.
 
@@ -124,9 +124,9 @@ Entwicklungsfelder: Handwerk, Garten, Teamarbeit, Dokumentation, Commons
 Rollen: Scout, Builder, Dokumentar, Hüter
 ```
 
-### Entwicklungskarte
+### [Entwicklungskarte](docs/05-entwicklungskarte.md)
 
-Die Entwicklungskarte zeigt, welche Entwicklungsfelder durch attestierte Handlungen berührt wurden.
+Die Entwicklungskarte zeigt, welche [Development Fields](docs/06-game-pack.md#development-fields) durch attestierte Handlungen berührt wurden.
 
 Sie sagt nicht:
 
@@ -142,7 +142,7 @@ Es gibt attestierte Handlungen, die Holzarbeit berührt haben.
 
 Das ist ein wichtiger Unterschied. Die Entwicklungskarte soll Orientierung geben, nicht Menschen bewerten.
 
-### Adventure
+### [Adventure](docs/07-adventure.md)
 
 Ein Adventure ist ein Erlebnisbogen aus mehreren Quests.
 
@@ -157,11 +157,11 @@ Dazu können mehrere Quests gehören:
 - Bau dokumentieren,
 - Nachklang teilen.
 
-Einige Quests sind für das Ziel erforderlich. Andere sind optional.
+Einige Quests sind für das Ziel erforderlich. Andere sind optional. Die genaue Modellierung über Relations ist im Abschnitt [Adventure-Modellierung](docs/07-adventure.md#modellierung) beschrieben.
 
 In Gruppen ist es normal, dass verschiedene Menschen unterschiedliche Quests übernehmen. Alle zusammen können das Adventure abschließen, ohne dass jede Person alles getan hat.
 
-### Campaign
+### [Campaign](docs/08-campaign-und-world-state.md)
 
 Eine Campaign ist eine zeitlich oder zielbezogen begrenzte Spielbewegung.
 
@@ -173,9 +173,9 @@ Beispiele:
 - "Macher-Schule: vom Projekt zur echten Wirkung"
 - "Commons Builder: Orte, Angebote und Events sichtbar machen"
 
-Eine Campaign kann mehrere Spaces, Orte, Gruppen und Networks umfassen. Sie nutzt ein Game Pack und bündelt Quests und Adventures.
+Eine Campaign kann mehrere Spaces, Orte, Gruppen und Networks umfassen. Sie nutzt ein [Game Pack](docs/06-game-pack.md) und bündelt Quests und Adventures. Abgrenzung und Relations sind in [Campaign und World State](docs/08-campaign-und-world-state.md#abgrenzung) beschrieben.
 
-### World State
+### [World State](docs/08-campaign-und-world-state.md#world-state)
 
 World State ist der sichtbare Zustand einer Campaign.
 
@@ -189,7 +189,7 @@ Beispiele:
 - 50 Angebote im Marktplatz,
 - 6 neue Schul-Garten-Verbindungen.
 
-World State wird aus sichtbaren Items, Relations und Attestations berechnet.
+World State wird aus sichtbaren Items, Relations und Attestations berechnet. Die technische Arbeitsdefinition steht im Abschnitt [World-State-Metrik](docs/08-campaign-und-world-state.md#world-state-metrik).
 
 Die wichtigste Regel:
 
@@ -197,24 +197,24 @@ Die wichtigste Regel:
 World State darf nicht mehr behaupten, als seine Grundlage trägt.
 ```
 
-Wenn eine Metrik auf Items schaut, zeigt sie vorhandene sichtbare Dinge. Wenn sie auf Attestations schaut, zeigt sie bezeugte Aussagen. Wenn sie beides kombiniert, kann sie sichtbare Dinge mit bezeugten Bedingungen zählen.
+Wenn eine Metrik auf Items schaut, zeigt sie vorhandene sichtbare Dinge. Wenn sie auf Attestations schaut, zeigt sie bezeugte Aussagen. Wenn sie beides kombiniert, kann sie sichtbare Dinge mit bezeugten Bedingungen zählen. Die Source-Arten sind in [Items, Relations und Attestations](docs/08-campaign-und-world-state.md#source-arten) aufgeschlüsselt; Sichtbarkeitsregeln stehen unter [Sichtbarkeit und Schutz](docs/08-campaign-und-world-state.md#sichtbarkeit-und-schutz).
 
 ## Der Spielablauf
 
 Ein typischer Ablauf sieht so aus:
 
-1. Eine Campaign lädt Menschen zu einem gemeinsamen Ziel ein.
+1. Eine [Campaign](docs/08-campaign-und-world-state.md) lädt Menschen zu einem gemeinsamen Ziel ein.
 2. Menschen entdecken Quests, Orte, Events, Angebote oder Adventures.
 3. Sie wählen freiwillig aus, wobei sie mitmachen möchten.
 4. Sie erledigen reale Aufgaben.
 5. Sie reichen Evidence ein oder erzeugen sichtbare Spuren.
 6. Andere Menschen, Hosts, Mentoren, Gruppen, Systeme oder Agenten attestieren konkrete Beiträge.
-7. Badges und Entwicklungskarte machen diese Beiträge sichtbar.
-8. Adventures werden abgeschlossen, wenn die erforderlichen Quests erfüllt und attestiert sind.
-9. Der World State der Campaign verändert sich.
+7. Badges und [Entwicklungskarte](docs/05-entwicklungskarte.md) machen diese Beiträge sichtbar.
+8. [Adventures](docs/07-adventure.md#completion) werden abgeschlossen, wenn die erforderlichen Quests erfüllt und attestiert sind.
+9. Der [World State](docs/08-campaign-und-world-state.md#world-state) der Campaign verändert sich.
 10. Die Gruppe sieht, was gemeinsam in der Welt entstanden ist.
 
-## Beispiel: Hochbeet-Campaign
+## Beispiel: [Hochbeet-Campaign](docs/09-beispiel-hochbeet-campaign.md)
 
 Eine Nachbarschaft startet die Campaign:
 
