@@ -6,20 +6,22 @@ Dieses Repo sammelt Spielmechaniken, die auf dem Basisprotokoll aufbauen können
 
 | Mechanik | Kurzbeschreibung | Status |
 |---|---|---|
-| Adventures | Mehrere Quests werden zu einem Erlebnisbogen verbunden. | offen |
+| Game Pack | Wiederverwendbare Spielkonfiguration für Sprache, Entwicklungsfelder, Visuals und Beitragsspielrollen. | Arbeitsdefinition v0 |
+| Adventures | Mehrere Quests werden zu einem Erlebnisbogen verbunden. | Arbeitsdefinition v0 |
 | Journeys | Persönliche oder gemeinsame Entwicklungsreisen. | offen |
-| Campaigns | Zeitlich oder regional gerahmte Spielphasen. | offen |
+| Campaigns | Zeitlich oder zielbezogen begrenzte Spielbewegungen. | Arbeitsdefinition v0 |
 | Storylines | Narrative Rahmung realer Herausforderungen. | offen |
-| XP | Erfahrungspunkte als Fortschrittssignal. | offen |
-| Level | Stufenmodell für Spielprogression. | offen |
-| Skill Trees | Sichtbare Entwicklung realer Fähigkeiten. | offen |
-| Avatar Items | Symbolische oder spielerische Profilgegenstände. | offen |
+| Entwicklungskarte | Sichtbare Orientierung über attestierte Erfahrungen, Beiträge und Entwicklungsfelder. | Arbeitsdefinition v0 |
+| `developmentFields` | Quest-seitige Game-Erweiterung: welche Entwicklungsfelder eine gültige Quest-Completion berührt. | Arbeitsdefinition v0 |
+| XP | Erfahrungspunkte als Fortschrittssignal. | zurückgestellt |
+| Level | Stufenmodell für Spielprogression. | zurückgestellt |
+| Avatar-Items | Symbolische oder spielerische Darstellungen von Badge-/Attestation-Views im Profil oder Avatar. | offen |
 | Inventory | Sichtbare Sammlung von Ressourcen, Werkzeugen oder Symbolen. | offen |
 | Game Modes | Unterschiedliche Spielarten, z.B. Festival, lokaler Kreis, Projekt, Lernreise. | offen |
 | Roles | Spielerische Rollen wie Host, Scout, Steward, Dokumentar, Builder. | offen |
 | Game Master Tools | Werkzeuge für Menschen, die Spielräume gestalten. | offen |
 | AI Game Master | KI-Unterstützung für Questdesign und Spielleitung. | offen |
-| World State | Sichtbarer Zustand einer Region, eines Projekts oder einer Storyline. | offen |
+| World State | Berechneter Zustand einer Campaign aus sichtbaren Items, Relations und Attestations. | Arbeitsdefinition v0 |
 | Balancing | Wie Anreize fair, leicht und nicht manipulativ bleiben. | offen |
 
 ## Gehört ins Basisprotokoll
@@ -30,10 +32,12 @@ Diese Begriffe bleiben im [real-life-org/real-life-network-protocol](https://git
 - Quest-Autor,
 - Host,
 - Sichtbarkeit,
-- Completion,
-- Verification,
+- lokale Completion,
+- Evidence,
+- Attestation Policy,
 - Attestation,
 - Badge als Attestation oder Attestation-View,
+- Safety Requirements,
 - Quest-Fork,
 - Ortsbezug,
 - Zeitbezug,
@@ -47,9 +51,9 @@ Für die Basis gilt:
 Badge = Attestation oder aus Attestation ableitbare Anerkennung.
 ```
 
-XP, Level und Skill Trees sind bewusst später.
+XP und Level sind bewusst später. Die erste Fortschrittslogik ist die Entwicklungskarte.
 
-Grund: Diese Mechaniken können stark beeinflussen, was Menschen tun und wie sie sich vergleichen. Deshalb müssen sie sorgfältig entworfen werden, damit sie Freude, Orientierung und Entwicklung fördern, aber keinen sozialen Druck oder falsche Wertigkeit erzeugen.
+Grund: XP und Level können stark beeinflussen, was Menschen tun und wie sie sich vergleichen. Die Entwicklungskarte soll zuerst nur sichtbar machen, welche realen, attestierten Handlungen bestimmte Entwicklungsfelder berühren. Sie darf keine globale Bewertung eines Menschen werden.
 
 ## Mögliche erste Game-Slices
 
@@ -76,3 +80,17 @@ Eine gute Mechanik führt zu:
 - mehr lokaler Resilienz,
 - mehr Commons,
 - mehr echter Handlung.
+
+## Core-v0-Entscheidung
+
+Für die erste Konzeptbasis werden keine XP, globalen Level, Loot-Mechaniken oder Rankings eingeführt.
+
+Core v0 besteht aus:
+
+- Game Pack,
+- Entwicklungskarte,
+- Adventure,
+- Campaign,
+- World State.
+
+Diese Mechaniken bauen auf RLNP-Quests, Evidence, Attestation Policies und Attestations auf. Sie erzeugen keine eigene Completion- oder Verifikationslogik.

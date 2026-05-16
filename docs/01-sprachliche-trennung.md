@@ -69,10 +69,13 @@ Das Game benutzt Quests als kleinste reale Handlungseinheit.
 Im [real-life-org/real-life-network-protocol](https://github.com/real-life-org/real-life-network-protocol) sollten wir sagen:
 
 - Quest,
-- Completion,
-- Verification,
+- lokale Completion,
+- Evidence,
+- Attestation Policy,
+- Completion Attestation Template,
 - Attestation,
-- Badge,
+- Badge als Attestation oder Attestation-View,
+- Safety Requirements,
 - Visibility,
 - Host,
 - Author,
@@ -84,13 +87,33 @@ Im [real-life-org/real-life-game](https://github.com/real-life-org/real-life-gam
 - Journey,
 - Campaign,
 - Storyline,
+- Game Pack,
 - Player,
 - Game Master,
 - Progression,
-- Skill Tree,
+- Entwicklungskarte,
+- developmentFields,
 - Avatar,
+- Avatar-Item,
 - Inventory,
 - Game Mode,
 - World State.
 
 Damit bleibt das Basisprotokoll nüchtern und interoperabel, während dieses Repo die spielerische Tiefe erforschen kann.
+
+## V0-Grenze
+
+Für Core v0 gilt:
+
+| Gehört zu RLNP | Gehört zum Real Life Game |
+|---|---|
+| Quest | Adventure |
+| QuestRun | Campaign |
+| lokale Completion | Game Pack |
+| Evidence | Entwicklungskarte |
+| Attestation Policy | World State |
+| Completion Attestation Template | Avatar-Item-Darstellung |
+| Badge als Attestation oder Attestation-View | spielerische Rollen |
+| Safety Requirements | Sprache und Visuals |
+
+Das Game darf auf diese RLNP-Bausteine verweisen und sie darstellen. Es darf sie nicht als eigene, parallele Wahrheits- oder Verifikationslogik neu erfinden.

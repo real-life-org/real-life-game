@@ -1,7 +1,7 @@
 # Real Life Game
 
 **Status:** Entwurf
-**Datum:** 2026-05-08
+**Zuletzt aktualisiert:** 2026-05-16
 
 Das Real Life Game ist die spielerische Gestaltungsschicht auf WoT, Real Life Stack und Real Life Network.
 
@@ -20,7 +20,7 @@ Ziel ist nicht, ein klassisches Spiel zu gewinnen. Ziel ist WinWinWin:
 | Identität und Vertrauen | [real-life-org/wot-spec](https://github.com/real-life-org/wot-spec) | DIDs, QR-Verifikation, Kontakte, Attestations |
 | App- und Datenbasis | [real-life-org/real-life-stack](https://github.com/real-life-org/real-life-stack) | Spaces, generische Items, Profile, Karte, Kalender, Feed |
 | Netzwerkprotokoll | [real-life-org/real-life-network-protocol](https://github.com/real-life-org/real-life-network-protocol) | soziale Operationen, Quests als reale Einladungen, Badges als Attestations |
-| Spielgestaltung | [real-life-org/real-life-game](https://github.com/real-life-org/real-life-game) | Storylines, Progression, Spielmodi, Adventures, Rollen, Balancing, UI-Gefühl |
+| Spielgestaltung | [real-life-org/real-life-game](https://github.com/real-life-org/real-life-game) | Storylines, Entwicklungskarten, Spielmodi, Adventures, Campaigns, Rollen, Balancing, UI-Gefühl |
 
 Eine Quest gehört sprachlich und technisch zuerst zum Real Life Network Protocol. Das Game benutzt Quests, rahmt sie aber zusätzlich durch Spielmechaniken.
 
@@ -37,6 +37,25 @@ Game  = spielerischer Rahmen, der Quests, Orte, Ressourcen, Rollen und Geschicht
 - [Vision und Spielprinzip](docs/02-vision-und-spielprinzip.md)
 - [Mechanik-Backlog](docs/03-mechanik-backlog.md)
 - [Offene Designfragen](docs/04-offene-designfragen.md)
+- [Entwicklungskarte](docs/05-entwicklungskarte.md)
+- [Game Pack](docs/06-game-pack.md)
+- [Adventure](docs/07-adventure.md)
+- [Campaign und World State](docs/08-campaign-und-world-state.md)
+- [Beispiel: Hochbeet-Campaign](docs/09-beispiel-hochbeet-campaign.md)
+
+## Core v0
+
+Die erste stabile Konzeptbasis besteht aus fünf Bausteinen:
+
+| Baustein | Aufgabe |
+|---|---|
+| Game Pack | Sprache, Entwicklungsfelder, minimale Visuals und optionale Beitragsspielrollen |
+| Entwicklungskarte | Orientierung über attestierte Handlungen und berührte Entwicklungsfelder |
+| Adventure | Erlebnisbogen aus mehreren Quests |
+| Campaign | zeitlich oder zielbezogen begrenzte Spielbewegung |
+| World State | berechneter Zustand einer Campaign aus Items, Relations und Attestations |
+
+Diese Bausteine erzeugen keine eigene Wahrheitsschicht. Sie deuten und visualisieren sichtbare RLS-Items, Relations und WoT/RLNP-Attestations.
 
 ## Leitplanken
 

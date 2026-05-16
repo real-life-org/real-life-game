@@ -57,6 +57,14 @@ Der Gewinn ist implizit:
 
 Badges, Profile und Fortschritt können sichtbar machen, was passiert ist. Sie sind aber nicht der eigentliche Gewinn.
 
+## Entwicklungskarte
+
+Die Entwicklungskarte ersetzt in der ersten Version klassische Baum-, XP- und Level-Logik.
+
+Sie zeigt nicht, wie gut ein Mensch ist. Sie zeigt, welche attestierten Handlungen, Beiträge und Erfahrungen bestimmte Entwicklungsfelder berühren.
+
+Eine Quest kann dafür `developmentFields` angeben. Eine gültige Completion-Attestation macht diese Felder in der Entwicklungskarte sichtbar. Die Quelle der Wahrheit bleibt die Attestation; das Game deutet sie nur als Orientierung.
+
 ## Karte als Spielbrett
 
 Die Karte kann zum Spielbrett der realen Welt werden.
@@ -74,6 +82,14 @@ Alles mit Geobezug kann dort erscheinen:
 - lokale Kreise.
 
 Dadurch wird sichtbar: Das Spiel passiert nicht in einer virtuellen Welt, sondern in der realen Umgebung der Menschen.
+
+## Campaign und World State
+
+Eine Campaign bündelt Quests, Adventures, Orte und Gruppen zu einer gemeinsamen Spielbewegung.
+
+Der World State zeigt, was innerhalb dieser Campaign sichtbar passiert ist: gebaute Hochbeete, aktive Orte, stattgefundene Events, Angebote im Marktplatz oder neue Verbindungen zwischen Gruppen.
+
+World State ist keine neue Wahrheitsschicht. Er wird aus sichtbaren Items, Relations und Attestations berechnet und darf nicht mehr behaupten, als diese Grundlage trägt.
 
 ## KI-Agenten
 
