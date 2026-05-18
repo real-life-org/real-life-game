@@ -88,10 +88,18 @@ nachklang
 
 Dieselbe Quest kann in verschiedenen Game Packs andere Entwicklungsfelder berühren. Die konkrete Zuordnung sollte dort entstehen, wo Quests für eine Campaign oder ein Adventure kuratiert werden.
 
+## RLS-Projektion
+
+Im Real Life Stack wird diese Grundlage backend-agnostisch als `ConfirmationView` sichtbar.
+
+Eine signierte WoT-Attestation ist dort eine Confirmation mit `trustLevel: "signed-attested"`. Andere Backends können schwächere Grundlagen liefern, zum Beispiel `server-confirmed`, `local` oder `demo`.
+
+Eine Entwicklungskarte darf solche Confirmations anzeigen, muss die Trust-Stufe aber ehrlich behandeln. Eine serverseitige Bestätigung ist keine portable Attestation.
+
 ## Normen
 
 - `developmentFields` DÜRFEN keine globale Bewertung eines Menschen erzeugen.
 - `developmentFields` DÜRFEN keine portable Anerkennung ersetzen.
-- Eine Entwicklungskarte MUSS auf sichtbaren oder freigegebenen Attestations beruhen.
-- Private QuestRuns, Evidence oder Attestations DÜRFEN NICHT ohne Zustimmung auf einer Entwicklungskarte sichtbar werden.
+- Eine Entwicklungskarte MUSS auf sichtbaren oder freigegebenen Attestations oder Confirmations mit expliziter Trust-Stufe beruhen.
+- Private QuestRuns, Evidence, Confirmations oder Attestations DÜRFEN NICHT ohne Zustimmung auf einer Entwicklungskarte sichtbar werden.
 - XP, Level und Rankings DÜRFEN NICHT aus `developmentFields` abgeleitet werden, solange sie nicht gesondert konzipiert und geprüft sind.

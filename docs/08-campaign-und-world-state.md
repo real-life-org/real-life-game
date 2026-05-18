@@ -98,6 +98,8 @@ Die wichtigste Regel:
 Eine World-State-Metrik darf nicht mehr behaupten, als ihre Source trägt.
 ```
 
+In RLS-Views können bezeugte Quellen als `ConfirmationView` erscheinen. Eine signierte Attestation ist dort eine Confirmation mit `trustLevel: "signed-attested"`. Wenn eine World-State-Metrik auch `server-confirmed`, `local` oder `demo` akzeptiert, muss die UI diese schwächere Grundlage sichtbar machen.
+
 ## World-State-Metrik
 
 ```ts
@@ -317,7 +319,7 @@ Person X hat am meisten beigetragen.
 - Eine Campaign MUSS ein Game Pack nutzen oder ein eigenes Game Pack definieren.
 - Eine Campaign DARF mehrere Spaces und Networks umfassen.
 - Eine Campaign DARF per Zeit, manuell oder per World-State-Ziel enden.
-- World State MUSS aus sichtbaren Items, Relations oder Attestations berechnet werden.
+- World State MUSS aus sichtbaren Items, Relations, Confirmations oder Attestations berechnet werden.
 - World State DARF keine neue Wahrheitsschicht sein.
 - World State DARF keine privaten Daten ohne Freigabe auswerten.
 - Öffentliche World-State-Metriken SOLLTEN keine Menschen ranken.

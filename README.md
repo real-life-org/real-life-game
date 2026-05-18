@@ -95,6 +95,8 @@ Team Gartenkreis hat Hochbeet 7 gebaut.
 
 Diese Attestations sind die Wahrheitsschicht. Das Spiel kann sie sichtbar machen, aber nicht ersetzen.
 
+Im Real Life Stack erscheinen solche Belege als `ConfirmationView` mit Trust-Level. Eine signierte WoT-Attestation entspricht dort `signed-attested`. Schwächere Stufen wie `server-confirmed`, `local` oder `demo` dürfen für dieselben Views genutzt werden, müssen aber ehrlich als schwächere Grundlage sichtbar bleiben.
+
 ### Badge
 
 Ein Badge ist eine sichtbare Darstellung einer Attestation oder einer aus Attestations ableitbaren Anerkennung. Die Game-Seite betrachtet Badges vor allem als Darstellung und grenzt sie im [Mechanik-Backlog](docs/03-mechanik-backlog.md#badge-zuerst-xp-später) von XP und Leveln ab.
