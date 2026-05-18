@@ -70,6 +70,24 @@
 - Welche Handlungen brauchen menschliche Zustimmung?
 - Wie werden Agenten-Beiträge attestiert?
 
+## Endgame und spielerische Reife
+
+Siehe auch [Octalysis und das Real Life Game](10-octalysis-und-rlg.md#spielphasen-denken). Das RLG-Konzept beschreibt heute vor allem die Mitte einer Spielerreise. Was an deren Ende steht, ist offen.
+
+- Was machen Menschen, die schon an vielen Adventures beteiligt waren?
+- Welche Rollen entstehen mit Erfahrung: Mentor, Pack-Author, Host, Crafter, Hüter?
+- Wie werden diese Rollen in der Entwicklungskarte sichtbar, ohne ein Level-System zu werden?
+- Wann darf ein Mensch ein eigenes Game Pack veröffentlichen, wann eine eigene Campaign tragen?
+- Wie verhindern wir, dass erfahrene Menschen routinemäßig weitermachen, was ursprünglich Bedeutung hatte?
+- Welche Endgame-Mechaniken laden ein, statt zu binden?
+
+## Spielphasen und Onboarding
+
+- Wie sieht die Discovery-Phase aus, bevor jemand überhaupt eine Quest sieht?
+- Welche Form von Echo bekommt der erste Beitrag einer neuen Person (Beginner's Luck)?
+- Wie unterscheidet sich Onboarding von späterem Scaffolding mechanisch?
+- Welche Mechaniken passen zu lokalen Kreisen, welche zu Festivals, welche zu Lernreisen?
+
 ## Schutz und Grenzen
 
 - Welche Mechaniken sind nur für Erwachsene geeignet?
