@@ -233,7 +233,7 @@ Attestations zeigen, was bezeugt wurde.
 ```json
 {
   "id": "raised-beds-built",
-  "label": "Gebautete Hochbeete",
+  "label": "Gebaute Hochbeete",
   "source": {
     "type": "attestations",
     "claim": "adventure.completed",

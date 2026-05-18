@@ -57,6 +57,8 @@ Das Real Life Game baut auf drei tieferen Schichten auf.
 
 Das Game erzeugt keine eigene Wahrheitsschicht. Es deutet und visualisiert das, was in den anderen Schichten sichtbar oder attestiert ist.
 
+Für die Implementierung im Real Life Stack gibt es ein eigenes [RLNP- und Game-Integrationskonzept](https://github.com/real-life-org/real-life-stack/blob/master/docs/concepts/rlnp-game-integration.md). Dort ist beschrieben, wie RLS diese Semantik backend-agnostisch als Items, Relations, Confirmations und Views darstellbar macht, ohne sie selbst zu besitzen.
+
 ## Die Bausteine
 
 ### Quest
@@ -303,12 +305,13 @@ Menschen entwickeln reale Fähigkeiten durch konkrete Aufgaben, Reflexion, Begle
 - [Adventure](docs/07-adventure.md)
 - [Campaign und World State](docs/08-campaign-und-world-state.md)
 - [Beispiel: Hochbeet-Campaign](docs/09-beispiel-hochbeet-campaign.md)
+- [Octalysis und das Real Life Game](docs/10-octalysis-und-rlg.md)
 
 ## Offene nächste Schritte
 
 Dieses Grundkonzept ist die gemeinsame Basis. Daraus können mehrere nächste Artefakte entstehen:
 
-- ein RLS-Integrationsplan,
+- der Abgleich mit dem bestehenden [RLS-Integrationskonzept](https://github.com/real-life-org/real-life-stack/blob/master/docs/concepts/rlnp-game-integration.md),
 - ein Oberflächen-Prototyp,
 - ein erstes vollständiges Referenzspiel,
 - ein Macher-Schule-Konzept,
