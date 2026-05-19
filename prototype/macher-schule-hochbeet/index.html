@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Macher-Schule Hochbeet Prototype</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-navbar">
+        <div class="navbar-start">
+          <p class="eyebrow">Szenario-Prototyp</p>
+          <h1 id="appTitle">Macher-Schule Hochbeet</h1>
+        </div>
+
+        <div class="navbar-end">
+          <details class="user-menu" id="userMenu">
+            <summary class="user-menu-trigger" aria-label="User wechseln">
+              <span id="currentUserAvatar"></span>
+              <span class="user-menu-copy">
+                <span class="user-menu-name" id="currentUserName"></span>
+                <span class="user-menu-role" id="currentUserRole"></span>
+              </span>
+              <span class="user-menu-caret" aria-hidden="true">v</span>
+            </summary>
+            <div class="user-menu-panel">
+              <p class="menu-label">User wechseln</p>
+              <div class="user-switch-options" id="userSwitchOptions"></div>
+            </div>
+          </details>
+        </div>
+      </header>
+
+      <div class="app-content">
+        <section class="app-layout">
+          <section class="workspace-column">
+            <div class="surface-heading" id="surfaceHeading">
+            </div>
+            <section class="quest-column">
+              <div class="surface-nav" id="surfaceNav"></div>
+              <section class="quest-panel">
+                <div id="questView"></div>
+              </section>
+            </section>
+          </section>
+
+          <aside class="profile-panel" aria-label="Profil">
+            <div id="profileView"></div>
+          </aside>
+        </section>
+
+        <section class="debug-layout">
+          <button class="debug-toggle" id="debugToggle" type="button" data-action="toggle-debug" aria-expanded="false">
+            Debug anzeigen
+          </button>
+          <section class="panel debug-panel is-hidden" id="debugPanel">
+            <div class="panel-heading debug-heading">
+              <div>
+                <p class="eyebrow">World State</p>
+                <h2>Gemeinsamer Zustand</h2>
+              </div>
+              <button class="ghost-button compact" id="resetButton" type="button">Zurücksetzen</button>
+            </div>
+            <div id="worldStateView"></div>
+            <div class="debug-divider"></div>
+            <div class="panel-heading debug-heading">
+              <div>
+                <p class="eyebrow">Simulator</p>
+                <h2>Datenmodell</h2>
+              </div>
+            </div>
+            <div id="modelInfoView"></div>
+            <div class="debug-actions">
+              <button class="ghost-button compact" id="exportBundleButton" type="button">Datenmodell exportieren</button>
+              <button class="ghost-button compact" id="exportStateButton" type="button">Stand exportieren</button>
+              <button class="ghost-button compact" id="importSimulationButton" type="button">Importieren</button>
+              <button class="ghost-button compact" id="resetModelButton" type="button">Datenmodell zurücksetzen</button>
+              <input id="importSimulationInput" type="file" accept="application/json" hidden>
+            </div>
+            <p class="debug-status" id="importStatus" aria-live="polite"></p>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script src="scenario.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

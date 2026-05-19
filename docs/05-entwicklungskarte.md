@@ -4,16 +4,17 @@
 
 Die Entwicklungskarte ist die erste Fortschritts- und Orientierungsschicht des Real Life Game.
 
-Sie ersetzt für Core v0 klassische Baum-, XP- und Level-Logik. Sie bewertet keine Menschen und behauptet kein Können aus sich heraus. Sie zeigt, welche realen, attestierten Handlungen bestimmte Entwicklungsfelder berühren.
+Sie ersetzt für Core v0 klassische Baum-, XP- und Level-Logik. Sie bewertet keine Menschen und behauptet kein Können aus sich heraus. Sie zeigt, welche realen, bestätigten oder attestierten Handlungen bestimmte Entwicklungsfelder berühren.
 
 ## Grundsatz
 
 ```text
-Attestation = Wahrheitsschicht.
+Confirmation = bestätigte Grundlage.
+Attestation = portable, signierte Confirmation.
 Entwicklungskarte = Deutungs- und Orientierungsschicht.
 ```
 
-Eine Quest kann `developmentFields` tragen. Diese Felder beschreiben, welche Entwicklungsfelder durch eine gültige Completion-Attestation sichtbar werden.
+Eine Quest kann `developmentFields` tragen. Diese Felder beschreiben als Default, welche Entwicklungsfelder durch eine gültige Completion-Confirmation sichtbar werden.
 
 Beispiel:
 
@@ -38,7 +39,7 @@ Diese Person kann Holzarbeit.
 Sondern:
 
 ```text
-Es gibt eine attestierte Quest-Completion, die Holzarbeit, Werkzeugnutzung und Teamarbeit berührt.
+Es gibt eine bestätigte Quest-Completion, die Holzarbeit, Werkzeugnutzung und Teamarbeit berührt.
 ```
 
 ## Verhältnis zu RLNP
@@ -50,10 +51,12 @@ RLNP trägt:
 - Quest und QuestRun,
 - lokale Completion,
 - Evidence,
-- Attestation Policy,
-- Completion Attestation Template,
+- Confirmation Policy,
+- Evidence Policy,
+- Completion Confirmation Template,
 - Safety Requirements,
-- Badge als WoT-Attestation oder Attestation-View.
+- Confirmation,
+- Badge als Confirmation- oder Attestation-View.
 
 Das Game ergänzt nur:
 
@@ -87,6 +90,16 @@ nachklang
 ```
 
 Dieselbe Quest kann in verschiedenen Game Packs andere Entwicklungsfelder berühren. Die konkrete Zuordnung sollte dort entstehen, wo Quests für eine Campaign oder ein Adventure kuratiert werden.
+
+Praktisch gibt es damit drei Ebenen:
+
+| Ebene | Bedeutung |
+|---|---|
+| Game Pack | Definiert das Vokabular der Entwicklungsfelder. |
+| Quest | Kann Default-`developmentFields` für die Quest tragen. |
+| Kuratierter Kontext | Kann `developmentFields` auf einer Quest-View, Adventure-Quest-Relation oder Step-View verfeinern oder überschreiben. |
+
+Die Entwicklungskarte liest die Felder aus der konkreten bestätigten Handlung. Bei einem QuestRun in einem AdventureRun ist das also zuerst der kuratierte Adventure-Step, falls dort Felder gesetzt sind, sonst der Quest-Default.
 
 ## RLS-Projektion
 

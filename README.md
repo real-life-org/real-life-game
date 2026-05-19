@@ -52,10 +52,10 @@ Das Real Life Game baut auf drei tieferen Schichten auf.
 |---|---|
 | [Web of Trust](https://github.com/real-life-org/wot-spec) | Identität, Kontakte, Verifikation und Attestations |
 | [Real Life Stack](https://github.com/real-life-org/real-life-stack) | App-Basis, Spaces, Items, Karte, Kalender, Profile, Marktplatz |
-| [Real Life Network Protocol](https://github.com/real-life-org/real-life-network-protocol) | Quests, QuestRuns, Evidence, Completion, Attestation Policy, Badges |
-| [Real Life Game](.) | Game Packs, Entwicklungskarte, Adventures, Campaigns, World State |
+| [Real Life Network Protocol](https://github.com/real-life-org/real-life-network-protocol) | Quests, QuestRuns, Evidence, Completion, Confirmation Policy, Badges |
+| [Real Life Game](.) | Game Packs, Entwicklungskarte, Adventures, AdventureRuns, Campaigns, World State |
 
-Das Game erzeugt keine eigene Wahrheitsschicht. Es deutet und visualisiert das, was in den anderen Schichten sichtbar oder attestiert ist.
+Das Game erzeugt keine eigene Wahrheitsschicht. Es deutet und visualisiert das, was in den anderen Schichten sichtbar, bestätigt oder attestiert ist.
 
 Für die Implementierung im Real Life Stack gibt es ein eigenes [RLNP- und Game-Integrationskonzept](https://github.com/real-life-org/real-life-stack/blob/master/docs/concepts/rlnp-game-integration.md). Dort ist beschrieben, wie RLS diese Semantik backend-agnostisch als Items, Relations, Confirmations und Views darstellbar macht, ohne sie selbst zu besitzen.
 
@@ -75,13 +75,13 @@ Beispiele:
 
 Quests gehören zuerst zum [Real Life Network Protocol](https://github.com/real-life-org/real-life-network-protocol/blob/main/05-quests/quest-mechanik.md). Sie müssen auch ohne vollständiges Spielsystem funktionieren. Die Trennung zwischen Quest und Game ist in der [sprachlichen Trennung](docs/01-sprachliche-trennung.md#quest) genauer beschrieben.
 
-### Evidence und Attestation
+### Evidence, Confirmation und Attestation
 
-Wenn jemand eine Quest erledigt, kann er oder sie eine Spur hinterlassen: ein Foto, eine Notiz, ein QR-Scan, ein Systemereignis oder eine kurze Dokumentation. Das ist Evidence. Die Completion-Logik liegt im [Real Life Network Protocol](https://github.com/real-life-org/real-life-network-protocol/blob/main/05-quests/quest-mechanik.md#10-completion-evidence-und-attestation).
+Wenn jemand eine Quest erledigt, kann er oder sie eine Spur hinterlassen: ein Foto, eine Notiz, ein QR-Scan, ein Systemereignis oder eine kurze Dokumentation. Das ist Evidence. Die Completion-Logik liegt im [Real Life Network Protocol](https://github.com/real-life-org/real-life-network-protocol/blob/main/05-quests/quest-mechanik.md#10-completion-evidence-und-confirmation).
 
 Evidence ist noch kein portabler Beleg.
 
-Ein Beitrag wird erst dann belegt, wenn eine Attestation entsteht. Eine Attestation ist eine signierte Aussage im Web of Trust, zum Beispiel:
+Ein Beitrag kann durch eine Confirmation bestätigt werden. Eine portable Confirmation ist eine signierte Attestation im Web of Trust, zum Beispiel:
 
 ```text
 Mira hat beim Bau des Hochbeet-Rahmens mitgeholfen.
@@ -93,19 +93,21 @@ Oder:
 Team Gartenkreis hat Hochbeet 7 gebaut.
 ```
 
-Diese Attestations sind die Wahrheitsschicht. Das Spiel kann sie sichtbar machen, aber nicht ersetzen.
+Eine signierte Attestation ist die portable Wahrheitsschicht. Das Spiel kann sie sichtbar machen, aber nicht ersetzen. Schwächere Confirmations können für lokale Completion reichen, müssen aber als solche erkennbar bleiben.
 
 Im Real Life Stack erscheinen solche Belege als `ConfirmationView` mit Trust-Level. Eine signierte WoT-Attestation entspricht dort `signed-attested`. Schwächere Stufen wie `server-confirmed`, `local` oder `demo` dürfen für dieselben Views genutzt werden, müssen aber ehrlich als schwächere Grundlage sichtbar bleiben.
 
 ### Badge
 
-Ein Badge ist eine sichtbare Darstellung einer Attestation oder einer aus Attestations ableitbaren Anerkennung. Die Game-Seite betrachtet Badges vor allem als Darstellung und grenzt sie im [Mechanik-Backlog](docs/03-mechanik-backlog.md#badge-zuerst-xp-später) von XP und Leveln ab.
+Ein Badge ist eine sichtbare Anerkennung, die auf einer konkreten Attestierung beruht. Die Game-Seite betrachtet Badges vor allem als Darstellung und grenzt sie im [Mechanik-Backlog](docs/03-mechanik-backlog.md#badge-zuerst-xp-später) von XP und Leveln ab.
 
 Ein Badge kann im Profil erscheinen, in einer Campaign sichtbar werden oder später als Avatar-Item dargestellt werden. Der Kern bleibt aber immer:
 
 ```text
-Badge = sichtbare Anerkennung, die auf einer Attestation beruht.
+Badge = sichtbare Anerkennung, die auf einer konkreten Attestierung beruht.
 ```
+
+Ein portables Badge braucht eine signierte Attestation. Entwicklungsfelder sind davon getrennt: Sie werden aus bestätigten oder attestierten Handlungen für die Entwicklungskarte abgeleitet, sind aber selbst keine Badges.
 
 ### [Game Pack](docs/06-game-pack.md)
 
@@ -130,7 +132,7 @@ Rollen: Scout, Builder, Dokumentar, Hüter
 
 ### [Entwicklungskarte](docs/05-entwicklungskarte.md)
 
-Die Entwicklungskarte zeigt, welche [Development Fields](docs/06-game-pack.md#development-fields) durch attestierte Handlungen berührt wurden.
+Die Entwicklungskarte zeigt, welche [Development Fields](docs/06-game-pack.md#development-fields) durch bestätigte oder attestierte Handlungen berührt wurden.
 
 Sie sagt nicht:
 
@@ -141,14 +143,14 @@ Diese Person ist gut in Holzarbeit.
 Sie sagt:
 
 ```text
-Es gibt attestierte Handlungen, die Holzarbeit berührt haben.
+Es gibt bestätigte Handlungen, die Holzarbeit berührt haben.
 ```
 
 Das ist ein wichtiger Unterschied. Die Entwicklungskarte soll Orientierung geben, nicht Menschen bewerten.
 
 ### [Adventure](docs/07-adventure.md)
 
-Ein Adventure ist ein Erlebnisbogen aus mehreren Quests.
+Ein Adventure ist die Vorlage eines Erlebnisbogens aus mehreren Quests. Ein AdventureRun ist eine konkrete Durchführung dieses Erlebnisbogens.
 
 Beispiel: "Hochbeet bauen"
 
@@ -161,9 +163,9 @@ Dazu können mehrere Quests gehören:
 - Bau dokumentieren,
 - Nachklang teilen.
 
-Einige Quests sind für das Ziel erforderlich. Andere sind optional. Die genaue Modellierung über Relations ist im Abschnitt [Adventure-Modellierung](docs/07-adventure.md#modellierung) beschrieben.
+Einige Adventure-Steps sind für das Ziel erforderlich. Andere sind optional. Die genaue Modellierung über Relations ist im Abschnitt [Adventure-Modellierung](docs/07-adventure.md#modellierung) beschrieben.
 
-In Gruppen ist es normal, dass verschiedene Menschen unterschiedliche Quests übernehmen. Alle zusammen können das Adventure abschließen, ohne dass jede Person alles getan hat.
+In Gruppen ist es normal, dass verschiedene Menschen unterschiedliche Steps übernehmen. Alle zusammen können einen AdventureRun abschließen, ohne dass jede Person alles getan hat.
 
 ### [Campaign](docs/08-campaign-und-world-state.md)
 
@@ -189,11 +191,11 @@ Beispiele:
 
 - 27 Hochbeete gebaut,
 - 8 aktive Orte,
-- 12 Events mit mindestens 3 attestierten Teilnehmenden,
+- 12 Events mit mindestens 3 bestätigten Teilnehmenden,
 - 50 Angebote im Marktplatz,
 - 6 neue Schul-Garten-Verbindungen.
 
-World State wird aus sichtbaren Items, Relations und Attestations berechnet. Die technische Arbeitsdefinition steht im Abschnitt [World-State-Metrik](docs/08-campaign-und-world-state.md#world-state-metrik).
+World State wird aus sichtbaren Items, Relations, Confirmations und Attestations berechnet. Die technische Arbeitsdefinition steht im Abschnitt [World-State-Metrik](docs/08-campaign-und-world-state.md#world-state-metrik).
 
 Die wichtigste Regel:
 
@@ -201,7 +203,7 @@ Die wichtigste Regel:
 World State darf nicht mehr behaupten, als seine Grundlage trägt.
 ```
 
-Wenn eine Metrik auf Items schaut, zeigt sie vorhandene sichtbare Dinge. Wenn sie auf Attestations schaut, zeigt sie bezeugte Aussagen. Wenn sie beides kombiniert, kann sie sichtbare Dinge mit bezeugten Bedingungen zählen. Die Source-Arten sind in [Items, Relations und Attestations](docs/08-campaign-und-world-state.md#source-arten) aufgeschlüsselt; Sichtbarkeitsregeln stehen unter [Sichtbarkeit und Schutz](docs/08-campaign-und-world-state.md#sichtbarkeit-und-schutz).
+Wenn eine Metrik auf Items schaut, zeigt sie vorhandene sichtbare Dinge. Wenn sie auf Confirmations oder Attestations schaut, zeigt sie bezeugte Aussagen. Wenn sie beides kombiniert, kann sie sichtbare Dinge mit bezeugten Bedingungen zählen. Die Source-Arten sind in [Items, Relations und Confirmations](docs/08-campaign-und-world-state.md#source-arten) aufgeschlüsselt; Sichtbarkeitsregeln stehen unter [Sichtbarkeit und Schutz](docs/08-campaign-und-world-state.md#sichtbarkeit-und-schutz).
 
 ## Der Spielablauf
 
@@ -212,13 +214,13 @@ Ein typischer Ablauf sieht so aus:
 3. Sie wählen freiwillig aus, wobei sie mitmachen möchten.
 4. Sie erledigen reale Aufgaben.
 5. Sie reichen Evidence ein oder erzeugen sichtbare Spuren.
-6. Andere Menschen, Hosts, Mentoren, Gruppen, Systeme oder Agenten attestieren konkrete Beiträge.
+6. Andere Menschen, Hosts, Mentoren, Gruppen, Systeme oder Agenten bestätigen konkrete Beiträge.
 7. Badges und [Entwicklungskarte](docs/05-entwicklungskarte.md) machen diese Beiträge sichtbar.
-8. [Adventures](docs/07-adventure.md#completion) werden abgeschlossen, wenn die erforderlichen Quests erfüllt und attestiert sind.
+8. [AdventureRuns](docs/07-adventure.md#completion) werden abgeschlossen, wenn die erforderlichen Adventure-Steps erfüllt und bestätigt sind.
 9. Der [World State](docs/08-campaign-und-world-state.md#world-state) der Campaign verändert sich.
 10. Die Gruppe sieht, was gemeinsam in der Welt entstanden ist.
 
-## Beispiel: [Hochbeet-Campaign](docs/09-beispiel-hochbeet-campaign.md)
+## Beispiel: [Hochbeet-Campaign](docs/examples/hochbeet-campaign.md)
 
 Eine Nachbarschaft startet die Campaign:
 
@@ -228,7 +230,7 @@ Eine Nachbarschaft startet die Campaign:
 
 Das Game Pack heißt "Commons Builder". Es kennt Entwicklungsfelder wie Garten, Handwerk, Teamarbeit, Dokumentation und Commons.
 
-Ein Adventure heißt "Hochbeet bauen".
+Ein Adventure heißt "Hochbeet bauen". Eine Gruppe startet einen konkreten AdventureRun für ein bestimmtes Hochbeet.
 
 Dazu gehören Quests:
 
@@ -238,9 +240,9 @@ Dazu gehören Quests:
 - Pflanzen einsetzen,
 - Bau dokumentieren.
 
-Anton besorgt Material. Timo baut den Rahmen. Mira dokumentiert. Jede dieser Handlungen kann eine eigene Quest-Completion-Attestation bekommen.
+Anton besorgt Material. Timo baut den Rahmen. Mira dokumentiert. Jede dieser Handlungen kann eine eigene Quest-Completion-Confirmation bekommen und einen Step in diesem AdventureRun füllen.
 
-Wenn die erforderlichen Quests erfüllt sind, kann zusätzlich attestiert werden:
+Wenn die erforderlichen Steps erfüllt sind, kann zusätzlich bestätigt werden:
 
 ```text
 Team Gartenkreis hat Hochbeet 7 gebaut.
@@ -252,7 +254,7 @@ Der World State der Campaign kann dann zählen:
 Insgesamt wurden schon 53 Hochbeete in der Nachbarschaft gebaut.
 ```
 
-Die Entwicklungskarte der Beteiligten kann zeigen, welche Entwicklungsfelder ihre attestierten Beiträge berührt haben. Sie behauptet aber nicht automatisch, dass jemand eine Fähigkeit vollständig beherrscht.
+Die Entwicklungskarte der Beteiligten kann zeigen, welche Entwicklungsfelder ihre bestätigten Beiträge berührt haben. Sie behauptet aber nicht automatisch, dass jemand eine Fähigkeit vollständig beherrscht.
 
 ## Was es nicht ist
 
@@ -294,7 +296,7 @@ Menschen bauen gemeinsam Gärten, Werkstätten, Räume, Materialpools, Lebensmit
 
 ### Lernreise
 
-Menschen entwickeln reale Fähigkeiten durch konkrete Aufgaben, Reflexion, Begleitung und attestierte Beiträge.
+Menschen entwickeln reale Fähigkeiten durch konkrete Aufgaben, Reflexion, Begleitung und bestätigte Beiträge.
 
 ## Vertiefende Dokumente
 
@@ -306,8 +308,17 @@ Menschen entwickeln reale Fähigkeiten durch konkrete Aufgaben, Reflexion, Begle
 - [Game Pack](docs/06-game-pack.md)
 - [Adventure](docs/07-adventure.md)
 - [Campaign und World State](docs/08-campaign-und-world-state.md)
-- [Beispiel: Hochbeet-Campaign](docs/09-beispiel-hochbeet-campaign.md)
 - [Octalysis und das Real Life Game](docs/10-octalysis-und-rlg.md)
+
+## Beispiele
+
+- [Beispiele: Übersicht](docs/examples/README.md)
+- [Beispiel: Hochbeet-Campaign](docs/examples/hochbeet-campaign.md)
+- [Beispiel: Macher-Schule Hochbeet-Gruppe](docs/examples/macher-schule-hochbeet-gruppe.md)
+
+## Prototypen
+
+- [Macher-Schule Hochbeet](prototype/macher-schule-hochbeet/README.md)
 
 ## Offene nächste Schritte
 

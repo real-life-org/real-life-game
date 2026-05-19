@@ -8,10 +8,14 @@ Dieses Repo sammelt Spielmechaniken, die auf dem Basisprotokoll aufbauen können
 |---|---|---|
 | Game Pack | Wiederverwendbare Spielkonfiguration für Sprache, Entwicklungsfelder, Visuals und Beitragsspielrollen. | Arbeitsdefinition v0 |
 | Adventures | Mehrere Quests werden zu einem Erlebnisbogen verbunden. | Arbeitsdefinition v0 |
+| AdventureRuns | Konkrete Durchführung eines Adventures durch eine Person oder Gruppe. | Arbeitsdefinition v0 |
+| Adventure-Steps | Semantische Adventure-Quest-Relationen mit required/order/role/capacity/dependsOn. | Arbeitsdefinition v0 |
+| Multiplayer Adventures | Mehrere Menschen füllen unterschiedliche Adventure-Steps in einem gemeinsamen AdventureRun. | Arbeitsdefinition v0 |
+| Multiplayer Quests | Eine einzelne Quest braucht mehrere Menschen zugleich oder in verschiedenen Quest-Rollen. | offen |
 | Journeys | Persönliche oder gemeinsame Entwicklungsreisen. | offen |
 | Campaigns | Zeitlich oder zielbezogen begrenzte Spielbewegungen. | Arbeitsdefinition v0 |
 | Storylines | Narrative Rahmung realer Herausforderungen. | offen |
-| Entwicklungskarte | Sichtbare Orientierung über attestierte Erfahrungen, Beiträge und Entwicklungsfelder. | Arbeitsdefinition v0 |
+| Entwicklungskarte | Sichtbare Orientierung über bestätigte oder attestierte Erfahrungen, Beiträge und Entwicklungsfelder. | Arbeitsdefinition v0 |
 | `developmentFields` | Quest-seitige Game-Erweiterung: welche Entwicklungsfelder eine gültige Quest-Completion berührt. | Arbeitsdefinition v0 |
 | XP | Erfahrungspunkte als Fortschrittssignal. | zurückgestellt |
 | Level | Stufenmodell für Spielprogression. | zurückgestellt |
@@ -21,7 +25,7 @@ Dieses Repo sammelt Spielmechaniken, die auf dem Basisprotokoll aufbauen können
 | Roles | Spielerische Rollen wie Host, Scout, Steward, Dokumentar, Builder. | offen |
 | Game Master Tools | Werkzeuge für Menschen, die Spielräume gestalten. | offen |
 | AI Game Master | KI-Unterstützung für Questdesign und Spielleitung. | offen |
-| World State | Berechneter Zustand einer Campaign aus sichtbaren Items, Relations und Attestations. | Arbeitsdefinition v0 |
+| World State | Berechneter Zustand einer Campaign aus sichtbaren Items, Relations, Confirmations und Attestations. | Arbeitsdefinition v0 |
 | Balancing | Wie Anreize fair, leicht und nicht manipulativ bleiben. | offen |
 
 ## Gehört ins Basisprotokoll
@@ -34,9 +38,11 @@ Diese Begriffe bleiben im [real-life-org/real-life-network-protocol](https://git
 - Sichtbarkeit,
 - lokale Completion,
 - Evidence,
-- Attestation Policy,
-- Attestation,
-- Badge als Attestation oder Attestation-View,
+- Confirmation Policy,
+- Evidence Policy,
+- Confirmation,
+- Attestation als portable signierte Confirmation,
+- Badge als Confirmation- oder Attestation-View,
 - Safety Requirements,
 - Quest-Fork,
 - Ortsbezug,
@@ -48,12 +54,12 @@ Diese Begriffe bleiben im [real-life-org/real-life-network-protocol](https://git
 Für die Basis gilt:
 
 ```text
-Badge = Attestation oder aus Attestation ableitbare Anerkennung.
+Badge = sichtbare Darstellung einer Confirmation oder Attestation.
 ```
 
 XP und Level sind bewusst später. Die erste Fortschrittslogik ist die Entwicklungskarte.
 
-Grund: XP und Level können stark beeinflussen, was Menschen tun und wie sie sich vergleichen. Die Entwicklungskarte soll zuerst nur sichtbar machen, welche realen, attestierten Handlungen bestimmte Entwicklungsfelder berühren. Sie darf keine globale Bewertung eines Menschen werden.
+Grund: XP und Level können stark beeinflussen, was Menschen tun und wie sie sich vergleichen. Die Entwicklungskarte soll zuerst nur sichtbar machen, welche realen, bestätigten Handlungen bestimmte Entwicklungsfelder berühren. Sie darf keine globale Bewertung eines Menschen werden.
 
 ## Mögliche erste Game-Slices
 
@@ -90,7 +96,8 @@ Core v0 besteht aus:
 - Game Pack,
 - Entwicklungskarte,
 - Adventure,
+- AdventureRun,
 - Campaign,
 - World State.
 
-Diese Mechaniken bauen auf RLNP-Quests, Evidence, Attestation Policies und Attestations auf. Sie erzeugen keine eigene Completion- oder Verifikationslogik.
+Diese Mechaniken bauen auf RLNP-Quests, QuestRuns, Evidence, Confirmation Policies, Confirmations und Attestations auf. Sie erzeugen keine eigene Completion- oder Verifikationslogik.

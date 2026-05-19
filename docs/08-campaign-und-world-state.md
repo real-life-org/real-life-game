@@ -44,6 +44,7 @@ includesSpace
 partOfNetwork
 includesQuest
 includesAdventure
+includesAdventureRun
 ```
 
 Diese Namen sind v0-Vorschläge und noch nicht final normiert.
@@ -118,7 +119,7 @@ type WorldStateMetric = {
 type WorldStateSource =
   | ItemSource
   | RelationSource
-  | AttestationSource
+  | ConfirmationSource
 
 type ItemSource = {
   type: "items"
@@ -134,16 +135,18 @@ type RelationSource = {
   requires?: SourceCondition[]
 }
 
-type AttestationSource = {
-  type: "attestations"
+type ConfirmationSource = {
+  type: "confirmations"
   claim: string
+  acceptedTrustLevels?: ("demo" | "local" | "server-confirmed" | "signed-attested")[]
   filter?: Record<string, unknown>
 }
 
 type SourceCondition =
   | {
-      type: "attestation-count"
+      type: "confirmation-count"
       claim: string
+      acceptedTrustLevels?: ("demo" | "local" | "server-confirmed" | "signed-attested")[]
       subjectRelation: string
       min: number
     }
@@ -228,17 +231,18 @@ Es gibt deklarierte Verbindungen zwischen Schulen und Gemeinschaftsgärten.
 
 Sie sagt nicht automatisch, dass diese Kooperationen praktisch erfüllt wurden.
 
-### Attestations
+### Confirmations
 
-Attestations zeigen, was bezeugt wurde.
+Confirmations zeigen, was bezeugt wurde. Wenn nur portable, signierte Belege zählen sollen, setzt die Metrik `acceptedTrustLevels: ["signed-attested"]`.
 
 ```json
 {
   "id": "raised-beds-built",
   "label": "Gebaute Hochbeete",
   "source": {
-    "type": "attestations",
+    "type": "confirmations",
     "claim": "adventure.completed",
+    "acceptedTrustLevels": ["server-confirmed", "signed-attested"],
     "filter": {
       "adventureType": "raised-bed"
     }
@@ -254,21 +258,21 @@ Attestations zeigen, was bezeugt wurde.
 Diese Metrik sagt:
 
 ```text
-Es gibt 100 eindeutig abgeschlossene Hochbeet-Adventures.
+Es gibt 100 eindeutig abgeschlossene Hochbeet-AdventureRuns.
 ```
 
-`count-distinct` ist hier wichtig, weil dasselbe Hochbeet mehrere Attestations haben kann.
+`count-distinct` ist hier wichtig, weil derselbe AdventureRun mehrere Confirmations haben kann.
 
 ## Kombinierte Sources
 
 Ein Item kann zusätzliche bezeugte Bedingungen brauchen.
 
-Beispiel: "Events mit mindestens 3 attestierten Teilnehmenden".
+Beispiel: "Events mit mindestens 3 bestätigten Teilnehmenden".
 
 ```json
 {
-  "id": "events-with-attested-participants",
-  "label": "Events mit mindestens 3 attestierten Teilnehmenden",
+  "id": "events-with-confirmed-participants",
+  "label": "Events mit mindestens 3 bestätigten Teilnehmenden",
   "source": {
     "type": "items",
     "itemType": "event",
@@ -278,9 +282,9 @@ Beispiel: "Events mit mindestens 3 attestierten Teilnehmenden".
     },
     "requires": [
       {
-        "type": "attestation-count",
+        "type": "confirmation-count",
         "claim": "event.participated",
-        "subjectRelation": "attestation.subject == item.id",
+        "subjectRelation": "confirmation.subject == item.id",
         "min": 3
       }
     ]
@@ -295,14 +299,14 @@ Beispiel: "Events mit mindestens 3 attestierten Teilnehmenden".
 Diese Metrik sagt:
 
 ```text
-Es gab 10 Event-Items, für die jeweils mindestens 3 Teilnahme-Attestations sichtbar sind.
+Es gab 10 Event-Items, für die jeweils mindestens 3 Teilnahme-Confirmations sichtbar sind.
 ```
 
 ## Sichtbarkeit und Schutz
 
 World State darf nur Daten auswerten, die für die Campaign sichtbar oder freigegeben sind.
 
-Er darf nicht heimlich private Profile, private QuestRuns, private Evidence oder private Attestations auswerten.
+Er darf nicht heimlich private Profile, private QuestRuns, private Evidence oder private Confirmations auswerten.
 
 Öffentliche World-State-Metriken sollten bevorzugt Dinge, Orte, Events, Adventures und sichtbare Ergebnisse zählen. Personenbezogene Auswertungen brauchen besondere Vorsicht, Zustimmung und sinnvolle Mindestgrößen.
 

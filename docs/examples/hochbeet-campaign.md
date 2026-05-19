@@ -60,12 +60,17 @@ const materialQuest = {
     ]
   },
   data: {
-    requiredEvidence: [
-      { type: "photo" },
-      { type: "receipt-or-source-note" }
-    ],
-    attestationPolicy: {
-      allowedIssuers: ["quest-host", "peer", "system"]
+    evidencePolicy: {
+      required: false,
+      acceptedTypes: ["photo", "text"]
+    },
+    confirmationPolicy: {
+      allowedConfirmers: [
+        { role: "quest-host" },
+        { role: "peer" },
+        { role: "system" }
+      ],
+      acceptedTrustLevels: ["server-confirmed", "signed-attested"]
     }
   }
 }
@@ -92,11 +97,11 @@ const documentationQuest = {
 }
 ```
 
-Eine gültige Quest-Completion wird erst durch eine Attestation portabel belegt. Evidence ist nur Grundlage für diese Attestation.
+Eine gültige Quest-Completion wird durch eine Confirmation belegt. Portable Completion braucht eine signierte Attestation. Evidence ist nur eine mögliche Grundlage für diese Confirmation.
 
 ## Adventure
 
-Das Adventure verbindet die Quests über Relations.
+Das Adventure ist die Vorlage und verbindet die Quests über Relations.
 
 ```ts
 const raisedBedAdventure = {
@@ -114,7 +119,7 @@ const raisedBedAdventure = {
   completionPolicy: {
     requiredQuestPredicate: "containsQuest",
     requireAllRequiredQuests: true,
-    completionAttestationTemplate: {
+    completionConfirmationTemplate: {
       claim: "adventure.completed",
       badge: {
         emoji: "🌱",
@@ -131,6 +136,7 @@ Relations:
 ```json
 [
   {
+    "id": "rel:raised-bed-material",
     "from": "item:adventure:raised-bed-adventure",
     "predicate": "containsQuest",
     "target": "item:quest:material-besorgen",
@@ -138,10 +144,12 @@ Relations:
       "required": true,
       "phase": "vorbereitung",
       "order": 1,
-      "roleId": "scout"
+      "roleId": "scout",
+      "capacity": 1
     }
   },
   {
+    "id": "rel:raised-bed-frame",
     "from": "item:adventure:raised-bed-adventure",
     "predicate": "containsQuest",
     "target": "item:quest:rahmen-bauen",
@@ -149,10 +157,12 @@ Relations:
       "required": true,
       "phase": "bau",
       "order": 2,
-      "roleId": "builder"
+      "roleId": "builder",
+      "capacity": 1
     }
   },
   {
+    "id": "rel:raised-bed-documentation",
     "from": "item:adventure:raised-bed-adventure",
     "predicate": "containsQuest",
     "target": "item:quest:dokumentation",
@@ -160,7 +170,8 @@ Relations:
       "required": false,
       "phase": "nachklang",
       "order": 3,
-      "roleId": "documenter"
+      "roleId": "documenter",
+      "capacity": 1
     }
   }
 ]
@@ -170,15 +181,29 @@ Relations:
 
 Verschiedene Menschen können unterschiedliche Einzelquests erledigen.
 
+Die Quests sind dabei offene Angebote. Die konkrete Person wird nicht an der Quest festgelegt, sondern entsteht erst im QuestRun.
+
+Die Koordination passiert im konkreten `AdventureRun`. Dort füllt ein QuestRun eine bestimmte Adventure-Quest-Relation:
+
 ```text
+QuestRun "Timo baut den Rahmen"
+  runsQuest -> item:quest:rahmen-bauen
+  partOfAdventureRun -> item:adventure-run:hochbeet-7
+  fillsAdventureStep -> rel:raised-bed-frame
+```
+
+Wenn `rel:raised-bed-frame` im Adventure `capacity: 1` hat, kann dieser Schritt in `adventure-run:hochbeet-7` nur von einem aktiven QuestRun gefüllt werden. Dieselbe Quest kann in einem anderen AdventureRun wieder offen sein.
+
+```text
+Ein möglicher Durchlauf:
 Anton besorgt Material.
 Timo baut den Rahmen.
 Mira dokumentiert.
 ```
 
-Die einzelnen Beiträge werden durch Quest-Completion-Attestations belegt.
+Die einzelnen Beiträge werden durch Quest-Completion-Confirmations belegt.
 
-Das Adventure kann zusätzlich eine gemeinsame Abschluss-Attestation erhalten:
+Der AdventureRun kann zusätzlich eine gemeinsame Abschluss-Confirmation erhalten:
 
 ```text
 Team Gartenkreis hat Hochbeet 7 gebaut.
@@ -205,8 +230,9 @@ const campaign = {
       id: "raised-beds-built",
       label: "Gebaute Hochbeete",
       source: {
-        type: "attestations",
+        type: "confirmations",
         claim: "adventure.completed",
+        acceptedTrustLevels: ["server-confirmed", "signed-attested"],
         filter: {
           adventureType: "raised-bed"
         }
@@ -235,8 +261,8 @@ const campaign = {
       visibility: "public"
     },
     {
-      id: "events-with-attested-participants",
-      label: "Events mit mindestens 3 attestierten Teilnehmenden",
+      id: "events-with-confirmed-participants",
+      label: "Events mit mindestens 3 bestätigten Teilnehmenden",
       source: {
         type: "items",
         itemType: "event",
@@ -246,9 +272,9 @@ const campaign = {
         },
         requires: [
           {
-            type: "attestation-count",
+            type: "confirmation-count",
             claim: "event.participated",
-            subjectRelation: "attestation.subject == item.id",
+            subjectRelation: "confirmation.subject == item.id",
             min: 3
           }
         ]
@@ -284,7 +310,7 @@ const campaign = {
 |---|---|
 | Hochbeete gebaut | bezeugte Adventure-Abschlüsse |
 | Gemeinschaftsgärten auf der Karte | sichtbare RLS-Items |
-| Events mit 3 Teilnehmenden | Event-Items mit zusätzlicher Attestation-Bedingung |
+| Events mit 3 Teilnehmenden | Event-Items mit zusätzlicher Confirmation-Bedingung |
 | Angebote im Marktplatz | sichtbare aktive RLS-Items |
 
 Keine dieser Metriken rankt Menschen. Sie zeigen, was in der Campaign als gemeinsamer Weltzustand sichtbar wird.

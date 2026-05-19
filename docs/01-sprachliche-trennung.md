@@ -71,10 +71,12 @@ Im [real-life-org/real-life-network-protocol](https://github.com/real-life-org/r
 - Quest,
 - lokale Completion,
 - Evidence,
-- Attestation Policy,
-- Completion Attestation Template,
-- Attestation,
-- Badge als Attestation oder Attestation-View,
+- Confirmation Policy,
+- Evidence Policy,
+- Completion Confirmation Template,
+- Confirmation,
+- Attestation als portable signierte Confirmation,
+- Badge als Confirmation- oder Attestation-View,
 - Safety Requirements,
 - Visibility,
 - Host,
@@ -108,12 +110,13 @@ Für Core v0 gilt:
 | Gehört zu RLNP | Gehört zum Real Life Game |
 |---|---|
 | Quest | Adventure |
-| QuestRun | Campaign |
+| QuestRun | AdventureRun |
 | lokale Completion | Game Pack |
 | Evidence | Entwicklungskarte |
-| Attestation Policy | World State |
-| Completion Attestation Template | Avatar-Item-Darstellung |
-| Badge als Attestation oder Attestation-View | spielerische Rollen |
+| Confirmation Policy | World State |
+| Evidence Policy | spielerische Quest-Darstellung |
+| Completion Confirmation Template | Campaign |
+| Badge als Confirmation- oder Attestation-View | spielerische Rollen |
 | Safety Requirements | Sprache und Visuals |
 
 Das Game darf auf diese RLNP-Bausteine verweisen und sie darstellen. Es darf sie nicht als eigene, parallele Wahrheits- oder Verifikationslogik neu erfinden.

@@ -5,7 +5,7 @@
 - Wann bleibt eine Quest schlichtes Netzwerkprotokoll?
 - Wann wird aus einer Quest ein Spielelement?
 - Wie werden Quest-Forks spielerisch sichtbar?
-- Wie werden `developmentFields` an Quests oder Quest-Views gehängt, ohne die RLNP-Quest-Semantik zu verändern?
+- Wie modellieren wir später echte Multiplayer Quests, bei denen eine einzelne Quest mehrere Menschen gleichzeitig oder in unterschiedlichen Quest-Rollen braucht?
 
 ## Entwicklungskarte
 
@@ -13,7 +13,7 @@
 - Sind `developmentFields` einfache IDs oder brauchen sie Labels aus dem Game Pack?
 - Wie zeigt die Entwicklungskarte Berührungen, ohne Können oder Wert zu behaupten?
 - Wie unterscheiden wir Erfahrung, Fähigkeit und Beitrag in der Entwicklungskarte?
-- Wie werden Gruppen- und Individual-Attestations unterschiedlich sichtbar?
+- Wie werden Gruppen- und Individual-Confirmations unterschiedlich sichtbar?
 
 ## Badges, XP und Fortschritt
 
@@ -21,7 +21,7 @@
 - Was bedeutet Leveln, ohne Menschen zu ranken?
 - Sind Avatar-Items rein spielerisch, symbolisch oder an reale Beiträge gekoppelt?
 
-## Attestations und Darstellung
+## Confirmations, Attestations und Darstellung
 
 - Wie übernimmt das Game Badge-Views aus RLNP/WoT, ohne Badge-Logik zu duplizieren?
 - Wann wird aus einer Badge-View optional eine Avatar-Item-Darstellung?
@@ -51,7 +51,10 @@
 ## Adventure
 
 - Welche Relation-Namen werden für Adventure-Quest-Verknüpfungen final verwendet?
-- Wie entsteht eine Adventure-Abschluss-Attestation praktisch aus mehreren Quest-Attestations?
+- Wann reicht eine referenzierbare `containsQuest`-Relation als Adventure-Step, und wann braucht eine Implementierung ein materialisiertes Step-Item oder eine Step-View?
+- Wie streng soll `capacity` in v0 durchgesetzt werden, z.B. nur gegen aktive QuestRuns oder auch gegen abgebrochene und archivierte Runs?
+- Brauchen `dependsOn`-Relationen später strengere Modi, z.B. lokal abgeschlossen reicht vs. explizit bestätigt erforderlich?
+- Wie entsteht eine AdventureRun-Abschluss-Confirmation praktisch aus mehreren Quest-Confirmations?
 - Wie werden Team-Beiträge und individuelle Beiträge in der UI nebeneinander sichtbar?
 - Wann braucht ein Adventure eigene `developmentFields`, statt nur die Felder seiner Quests zu erben?
 
@@ -61,14 +64,14 @@
 - Welche Aggregationsarten brauchen wir zuerst?
 - Wann darf eine Campaign automatisch enden?
 - Welche öffentlichen Metriken brauchen Mindestgrößen oder Zustimmung?
-- Wie unterscheiden wir World State, Report und Abschluss-Attestation einer Campaign?
+- Wie unterscheiden wir World State, Report und Abschluss-Confirmation einer Campaign?
 
 ## KI-Agenten
 
 - Wann ist ein Agent Spielleiter, wann Assistent, wann Mitspieler?
 - Welche Handlungen darf ein Agent eigenständig ausführen?
 - Welche Handlungen brauchen menschliche Zustimmung?
-- Wie werden Agenten-Beiträge attestiert?
+- Wie werden Agenten-Beiträge bestätigt oder attestiert?
 
 ## Endgame und spielerische Reife
 
