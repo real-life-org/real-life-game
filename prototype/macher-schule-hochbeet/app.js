@@ -1,7 +1,21 @@
-const STORAGE_KEY = "rlg-macher-schule-hochbeet-state-v6"
+const STORAGE_KEY = "rlg-macher-schule-hochbeet-state-v9"
 const BUNDLE_STORAGE_KEY = window.SIMULATION_BUNDLE_STORAGE_KEY || "rlg-macher-schule-hochbeet-bundle-v1"
-const ACTIVE_RUN_STATUSES = ["accepted", "in-progress", "completed", "confirmed"]
+const ACTIVE_RUN_STATUSES = ["open", "accepted", "in-progress", "completed", "confirmed"]
 const scenario = window.SCENARIO
+const MAIN_TABS = [
+  { id: "quests", label: "Quests" },
+  { id: "map", label: "Karte" },
+  { id: "calendar", label: "Kalender" }
+]
+const WEEKDAY_OPTIONS = [
+  { value: 1, label: "Mo" },
+  { value: 2, label: "Di" },
+  { value: 3, label: "Mi" },
+  { value: 4, label: "Do" },
+  { value: 5, label: "Fr" },
+  { value: 6, label: "Sa" },
+  { value: 7, label: "So" }
+]
 const PRIMARY_WORLD_METRIC_KEY = scenario.campaign?.worldState?.primaryMetricKey ||
   Object.keys(scenario.worldStateMetrics || {})[0] ||
   "raisedBedsBuilt"
@@ -14,6 +28,9 @@ const profileView = document.querySelector("#profileView")
 const worldStateView = document.querySelector("#worldStateView")
 const modelInfoView = document.querySelector("#modelInfoView")
 const appTitle = document.querySelector("#appTitle")
+const contextMenu = document.querySelector("#contextMenu")
+const contextSwitchOptions = document.querySelector("#contextSwitchOptions")
+const mainTabs = document.querySelector("#mainTabs")
 const userMenu = document.querySelector("#userMenu")
 const currentUserAvatar = document.querySelector("#currentUserAvatar")
 const currentUserName = document.querySelector("#currentUserName")
@@ -49,6 +66,9 @@ function loadState() {
 
 function normalizeState(value) {
   const fallback = clone(scenario.initialState)
+  const selectedTab = MAIN_TABS.some((tab) => tab.id === value.selectedTab)
+    ? value.selectedTab
+    : fallback.selectedTab || "quests"
   const selectedView = value.selectedView === "adventure" || value.selectedView === "step"
     ? "adventure"
     : value.selectedView === "standalone"
@@ -75,7 +95,12 @@ function normalizeState(value) {
     runs: normalizeRuns(Array.isArray(value.runs) ? value.runs : []),
     evidence: Array.isArray(value.evidence) ? value.evidence : [],
     confirmations: Array.isArray(value.confirmations) ? value.confirmations : [],
+    recurrenceRules: {
+      ...(fallback.recurrenceRules || {}),
+      ...(value.recurrenceRules || {})
+    },
     timeline: normalizeTimeline(timelineSource),
+    selectedTab,
     selectedView,
     selectedStepId: typeof value.selectedStepId === "string" ? value.selectedStepId : null,
     selectedStandaloneQuestKey: typeof value.selectedStandaloneQuestKey === "string" ? value.selectedStandaloneQuestKey : null,
@@ -91,14 +116,42 @@ function normalizeRuns(runs) {
     const createdAt = timestampValue(run.createdAt) || timestampFromId(run.id) || Date.now() - ((runs.length - index) * 60 * 1000)
     const completedAt = timestampValue(run.completedAt)
     const confirmedAt = timestampValue(run.confirmedAt)
+    const participants = normalizeParticipants(run)
 
     return {
       ...run,
+      participants,
       createdAt,
       ...(completedAt ? { completedAt } : {}),
       ...(confirmedAt ? { confirmedAt } : {})
     }
   })
+}
+
+function normalizeParticipants(run) {
+  if (Array.isArray(run.participants)) {
+    return run.participants
+      .map((participant) => {
+        if (typeof participant === "string") {
+          return { personId: participant, status: participantStatusForRun(run.status) }
+        }
+
+        return {
+          personId: participant.personId,
+          status: participant.status || participantStatusForRun(run.status)
+        }
+      })
+      .filter((participant) => typeof participant.personId === "string" && participant.personId)
+  }
+
+  return []
+}
+
+function participantStatusForRun(status) {
+  if (status === "confirmed") return "confirmed"
+  if (status === "completed") return "completed"
+  if (status === "open") return "open"
+  return "active"
 }
 
 function normalizeTimeline(items) {
@@ -120,7 +173,7 @@ function normalizeTimeline(items) {
       public: Boolean(item.public),
       adventureRunId: item.adventureRunId || null,
       questRunId: item.questRunId || null,
-      actorId: item.actorId || null,
+      personId: item.personId || null,
       createdAt: eventCreatedAt(item)
     }
   })
@@ -191,11 +244,38 @@ function applyGamePackVisuals() {
 function setRole(roleId) {
   state.selectedRole = roleId
   state.selectedView = "overview"
+  state.selectedTab = "quests"
   state.selectedStepId = null
   state.selectedStandaloneQuestKey = null
   userMenu.removeAttribute("open")
   saveState()
   render()
+}
+
+function setMainTab(tabId) {
+  if (!MAIN_TABS.some((tab) => tab.id === tabId)) return
+
+  state.selectedTab = tabId
+  saveState()
+  render()
+}
+
+function selectCampaign(campaignId) {
+  const bundle = currentSimulationBundle()
+  if (!bundle?.campaigns?.[campaignId]) return
+
+  if (campaignId === bundle.activeCampaignId) {
+    contextMenu?.removeAttribute("open")
+    return
+  }
+
+  const nextBundle = {
+    ...bundle,
+    activeCampaignId: campaignId
+  }
+  window.localStorage.setItem(BUNDLE_STORAGE_KEY, JSON.stringify(nextBundle))
+  window.localStorage.removeItem(STORAGE_KEY)
+  window.location.reload()
 }
 
 function selectAdventure(runId) {
@@ -206,6 +286,7 @@ function selectAdventure(runId) {
   }
 
   state.selectedView = "adventure"
+  state.selectedTab = "quests"
   state.selectedStepId = null
   state.selectedStandaloneQuestKey = null
   saveState()
@@ -214,7 +295,18 @@ function selectAdventure(runId) {
 
 function selectStep(stepId) {
   state.selectedView = "adventure"
+  state.selectedTab = "quests"
   state.selectedStepId = stepId
+  state.selectedStandaloneQuestKey = null
+  saveState()
+  render()
+}
+
+function selectAdventureStep(runId, stepId) {
+  state.selectedAdventureRunId = runId || null
+  state.selectedView = "adventure"
+  state.selectedTab = "quests"
+  state.selectedStepId = stepId || null
   state.selectedStandaloneQuestKey = null
   saveState()
   render()
@@ -222,6 +314,7 @@ function selectStep(stepId) {
 
 function selectStandaloneQuest(questKey) {
   state.selectedView = "standalone"
+  state.selectedTab = "quests"
   state.selectedStepId = null
   state.selectedStandaloneQuestKey = questKey
   saveState()
@@ -230,6 +323,7 @@ function selectStandaloneQuest(questKey) {
 
 function showQuestOverview() {
   state.selectedView = "overview"
+  state.selectedTab = "quests"
   state.selectedStepId = null
   state.selectedStandaloneQuestKey = null
   saveState()
@@ -247,13 +341,46 @@ function addEvent(text, options = {}) {
     public: Boolean(options.public),
     adventureRunId: options.adventureRunId || null,
     questRunId: options.questRunId || null,
-    actorId: options.actorId || null,
+    personId: options.personId || null,
     createdAt: now
   })
 }
 
 function personName(personId) {
   return scenario.people[personId] || personId
+}
+
+function runParticipantIds(run) {
+  if (!run) return []
+
+  if (Array.isArray(run.participants) && run.participants.length) {
+    return run.participants
+      .map((participant) => participant.personId)
+      .filter(Boolean)
+  }
+
+  return []
+}
+
+function runHasParticipant(run, personId) {
+  return runParticipantIds(run).includes(personId)
+}
+
+function addRunParticipant(run, personId) {
+  if (!run || !personId || runHasParticipant(run, personId)) return
+
+  const participants = Array.isArray(run.participants) ? run.participants : []
+  participants.push({ personId, status: "active" })
+  run.participants = participants
+}
+
+function markRunParticipants(run, status) {
+  if (!Array.isArray(run.participants)) return
+
+  run.participants = run.participants.map((participant) => ({
+    ...participant,
+    status
+  }))
 }
 
 function isStudent(roleId) {
@@ -363,7 +490,7 @@ function overviewItems() {
       markup: renderAdventureRunCard(run)
     })),
     ...standaloneQuestEntries().map(([questKey, offer]) => ({
-      history: isHistoryStatus(standaloneQuestStatus(questKey)),
+      history: isStandaloneQuestHistory(questKey),
       markup: renderStandaloneQuestCard(questKey, offer)
     }))
   ]
@@ -383,10 +510,25 @@ function slug(value) {
 }
 
 function todayKey() {
-  const date = new Date()
+  return dateKey(new Date())
+}
+
+function dateKey(value) {
+  const date = value instanceof Date ? value : new Date(value)
   const month = String(date.getMonth() + 1).padStart(2, "0")
   const day = String(date.getDate()).padStart(2, "0")
   return `${date.getFullYear()}-${month}-${day}`
+}
+
+function localDateFromKey(value) {
+  const [year, month, day] = String(value || "").split("-").map(Number)
+  if (!year || !month || !day) return null
+
+  return new Date(year, month - 1, day, 23, 59, 59, 999)
+}
+
+function weekdayNumber(date) {
+  return date.getDay() || 7
 }
 
 function adventureRuns() {
@@ -447,8 +589,152 @@ function getQuestForStep(step) {
   return getQuest(step.questKey)
 }
 
+function getLocation(locationId) {
+  return scenario.locations?.[locationId] || null
+}
+
+function stepLocation(step) {
+  return getLocation(step?.meta?.locationId || scenario.adventure?.locationId || scenario.campaign?.locationId)
+}
+
+function standaloneLocation(questKey) {
+  const offer = getStandaloneOffer(questKey)
+  const quest = getQuest(questKey)
+  return getLocation(offer?.locationId || quest?.locationId || scenario.campaign?.locationId)
+}
+
+function stepSchedule(step) {
+  return step?.meta?.schedule || scenario.adventure?.schedule || null
+}
+
+function standaloneSchedule(questKey) {
+  const offer = getStandaloneOffer(questKey)
+  const quest = getQuest(questKey)
+  return offer?.schedule || quest?.schedule || null
+}
+
+function recurrenceRuleForQuest(questKey) {
+  const offer = getStandaloneOffer(questKey)
+  const schedule = standaloneSchedule(questKey)
+  const scheduleStart = schedule?.startsAt || schedule?.date || null
+  const scheduleWeekday = scheduleStart ? weekdayNumber(new Date(scheduleTimestamp(schedule))) : 1
+  const fallbackWeekdays = offer?.runPolicy?.cadence === "school-daily"
+    ? [1, 2, 3, 4, 5]
+    : [scheduleWeekday]
+  const baseRule = {
+    frequency: "weekly",
+    weekdays: fallbackWeekdays,
+    until: null,
+    previewLimit: 10,
+    ...(offer?.recurrenceRule || {})
+  }
+  const override = state.recurrenceRules?.[questKey] || {}
+  const weekdays = Array.isArray(override.weekdays)
+    ? override.weekdays
+    : baseRule.weekdays
+
+  return {
+    ...baseRule,
+    ...override,
+    weekdays: weekdays
+      .map(Number)
+      .filter((weekday) => weekday >= 1 && weekday <= 7)
+      .sort((a, b) => a - b)
+  }
+}
+
+function updateRecurrenceRule(questKey, patch) {
+  state.recurrenceRules = {
+    ...(state.recurrenceRules || {}),
+    [questKey]: {
+      ...recurrenceRuleForQuest(questKey),
+      ...patch
+    }
+  }
+  saveState()
+  render()
+}
+
+function setRecurrenceWeekday(questKey, weekday, enabled) {
+  const rule = recurrenceRuleForQuest(questKey)
+  const weekdays = new Set(rule.weekdays)
+  if (enabled) weekdays.add(weekday)
+  if (!enabled && weekdays.size > 1) weekdays.delete(weekday)
+  updateRecurrenceRule(questKey, { weekdays: Array.from(weekdays).sort((a, b) => a - b) })
+}
+
+function setRecurrenceUntil(questKey, until) {
+  updateRecurrenceRule(questKey, { until: until || null })
+}
+
+function weekdayLabel(weekday) {
+  return WEEKDAY_OPTIONS.find((item) => item.value === weekday)?.label || String(weekday)
+}
+
+function weekdayRangeLabel(weekdays) {
+  if (!weekdays?.length) return "kein Wochentag"
+  if (weekdays.join(",") === "1,2,3,4,5") return "Mo-Fr"
+  if (weekdays.join(",") === "1,2,3,4,5,6,7") return "täglich"
+  return weekdays.map(weekdayLabel).join(", ")
+}
+
+function formatDateOnly(value) {
+  const timestamp = Date.parse(value)
+  if (!Number.isFinite(timestamp)) return "offen"
+
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(new Date(timestamp))
+}
+
+function recurrenceSummary(questKey) {
+  const rule = recurrenceRuleForQuest(questKey)
+  const until = rule.until ? ` bis ${formatDateOnly(rule.until)}` : ""
+  return `Jede Woche ${weekdayRangeLabel(rule.weekdays)}${until}`
+}
+
 function getRun(runId) {
   return state.runs.find((run) => run.id === runId)
+}
+
+function runSchedule(run) {
+  if (!run) return null
+  if (run.startsAt || run.endsAt) return run
+
+  const step = run.adventureStepRelationId ? getStep(run.adventureStepRelationId) : null
+  return stepSchedule(step)
+}
+
+function runStartTimestamp(run) {
+  const schedule = runSchedule(run)
+  return timestampValue(schedule?.startsAt || schedule?.date)
+}
+
+function runEndTimestamp(run) {
+  const schedule = runSchedule(run)
+  return timestampValue(schedule?.endsAt)
+}
+
+function runWindowStarted(run) {
+  const start = runStartTimestamp(run)
+  return !start || start <= Date.now()
+}
+
+function runCanStillBeAccepted(run) {
+  const end = runEndTimestamp(run)
+  if (end) return end >= Date.now()
+
+  const start = runStartTimestamp(run)
+  return !start || start >= Date.now()
+}
+
+function runStartHint(run) {
+  const schedule = runSchedule(run)
+  if (!runStartTimestamp(run)) return ""
+
+  return `Ab ${formatScheduleDate(schedule)} · ${formatScheduleTime(schedule)} möglich.`
 }
 
 function isActiveRun(run) {
@@ -464,7 +750,7 @@ function findRun(actorId, stepId) {
 
 function findRunInAdventureRun(actorId, stepId, runId) {
   return state.runs.find((run) => (
-    run.actorId === actorId &&
+    runHasParticipant(run, actorId) &&
     run.adventureRunId === runId &&
     run.adventureStepRelationId === stepId &&
     isActiveRun(run)
@@ -486,11 +772,27 @@ function runsForAdventureRun(runId) {
   return state.runs.filter((run) => run.adventureRunId === runId && isActiveRun(run))
 }
 
+function joinableRunForStep(actorId, step, runId = state.selectedAdventureRunId) {
+  const policy = participationPolicyForStep(step)
+
+  return runsForStep(step.id, runId).find((run) => (
+    ["open", "accepted", "in-progress"].includes(run.status) &&
+    !runHasParticipant(run, actorId) &&
+    runHasParticipantSlot(run, policy)
+  ))
+}
+
+function stepHasParticipantSlot(step, runId = state.selectedAdventureRunId) {
+  return Boolean(joinableRunForStep("__probe__", step, runId)) || !capacityReached(step, runId)
+}
+
 function participantIdsForAdventureRun(run) {
   if (!run) return []
 
   const ids = new Set(run.participantIds || [])
-  runsForAdventureRun(run.id).forEach((questRun) => ids.add(questRun.actorId))
+  runsForAdventureRun(run.id).forEach((questRun) => {
+    runParticipantIds(questRun).forEach((personId) => ids.add(personId))
+  })
   return Array.from(ids)
 }
 
@@ -511,23 +813,110 @@ function isStandaloneRunForQuest(run, questKey) {
   )
 }
 
+function scheduledRunId(questKey, periodKey) {
+  return `quest-run:${questKey}-${periodKey}`
+}
+
 function standalonePeriodKey(offer) {
   return offer?.repeatable && offer.cadence === "daily" ? todayKey() : null
 }
 
-function runsForStandaloneQuest(questKey) {
-  const offer = getStandaloneOffer(questKey)
-  const periodKey = standalonePeriodKey(offer)
+function isScheduledStandaloneQuest(questKey) {
+  return getStandaloneOffer(questKey)?.runPolicy?.type === "scheduled"
+}
 
+function allowsMultipleStandaloneRuns(questKey) {
+  const offer = getStandaloneOffer(questKey)
+  return Boolean(offer?.repeatable || isScheduledStandaloneQuest(questKey))
+}
+
+function materializedStandaloneRunsForQuest(questKey) {
   return state.runs.filter((run) => {
     if (!isStandaloneRunForQuest(run, questKey)) return false
-    if (!periodKey) return true
-    return run.periodKey === periodKey
+    return true
   })
 }
 
+function virtualStandaloneRunsForQuest(questKey, materializedRuns = materializedStandaloneRunsForQuest(questKey)) {
+  const quest = getQuest(questKey)
+  const offer = getStandaloneOffer(questKey)
+  const schedule = standaloneSchedule(questKey)
+  if (!quest || offer?.runPolicy?.type !== "scheduled" || !schedule?.startsAt) return []
+
+  const existingIds = new Set(materializedRuns.map((run) => run.id))
+  const start = new Date(scheduleTimestamp(schedule))
+  const endTimestamp = Date.parse(schedule.endsAt)
+  const duration = Number.isFinite(endTimestamp) ? Math.max(0, endTimestamp - start.getTime()) : null
+  const rule = recurrenceRuleForQuest(questKey)
+  const selectedWeekdays = new Set(rule.weekdays)
+  const untilDate = rule.until ? localDateFromKey(rule.until) : null
+  const horizonDate = new Date(start)
+  horizonDate.setDate(horizonDate.getDate() + 60)
+  const endDate = untilDate && untilDate < horizonDate ? untilDate : horizonDate
+  const previewLimit = Number.isFinite(rule.previewLimit) ? rule.previewLimit : 10
+  const runs = []
+  const cursor = new Date(start)
+
+  while (cursor <= endDate && runs.length < previewLimit) {
+    if (!selectedWeekdays.has(weekdayNumber(cursor))) {
+      cursor.setDate(cursor.getDate() + 1)
+      continue
+    }
+
+    const occurrenceStart = new Date(cursor)
+    const periodKey = dateKey(occurrenceStart)
+    const run = {
+      id: scheduledRunId(questKey, periodKey),
+      questKey,
+      questId: quest.id,
+      participants: [],
+      adventureRunId: null,
+      adventureStepRelationId: null,
+      periodKey,
+      status: "open",
+      locationId: offer?.locationId || quest.locationId || null,
+      startsAt: occurrenceStart.toISOString(),
+      endsAt: duration === null ? null : new Date(occurrenceStart.getTime() + duration).toISOString(),
+      virtual: true,
+      completion: null
+    }
+
+    if (!existingIds.has(run.id) && runCanStillBeAccepted(run)) {
+      runs.push(run)
+    }
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return runs
+}
+
+function runsForStandaloneQuest(questKey) {
+  const materializedRuns = materializedStandaloneRunsForQuest(questKey)
+  return [
+    ...materializedRuns,
+    ...virtualStandaloneRunsForQuest(questKey, materializedRuns)
+  ]
+}
+
 function findStandaloneRun(actorId, questKey) {
-  return runsForStandaloneQuest(questKey).find((run) => run.actorId === actorId)
+  return runsForStandaloneQuest(questKey).find((run) => (
+    runHasParticipant(run, actorId) &&
+    ["accepted", "in-progress"].includes(run.status)
+  ))
+}
+
+function openStandaloneRuns(questKey) {
+  return runsForStandaloneQuest(questKey).filter((run) => run.status === "open" && runCanStillBeAccepted(run))
+}
+
+function nextOpenStandaloneRun(questKey) {
+  return openStandaloneRuns(questKey)
+    .filter((run) => runHasParticipantSlot(run, participationPolicyForStandalone(questKey)))
+    .sort((a, b) => questRunTimestamp(a) - questRunTimestamp(b))[0] || null
+}
+
+function standaloneRunOption(questKey, runId) {
+  return runsForStandaloneQuest(questKey).find((run) => run.id === runId) || null
 }
 
 function hasConfirmation(runId) {
@@ -573,6 +962,31 @@ function stepCapacity(step) {
   return Number.isFinite(step.meta.capacity) ? step.meta.capacity : Number.POSITIVE_INFINITY
 }
 
+function participationPolicyForStep(step) {
+  return {
+    minParticipants: step?.meta?.participationPolicy?.minParticipants || 1,
+    maxParticipants: step?.meta?.participationPolicy?.maxParticipants || 1
+  }
+}
+
+function participationPolicyForStandalone(questKey) {
+  const offer = getStandaloneOffer(questKey)
+  const quest = getQuest(questKey)
+
+  return {
+    minParticipants: offer?.participationPolicy?.minParticipants || quest?.participationPolicy?.minParticipants || 1,
+    maxParticipants: offer?.participationPolicy?.maxParticipants || quest?.participationPolicy?.maxParticipants || 1
+  }
+}
+
+function runHasParticipantSlot(run, policy) {
+  return runParticipantIds(run).length < policy.maxParticipants
+}
+
+function runHasEnoughParticipants(run, policy) {
+  return runParticipantIds(run).length >= policy.minParticipants
+}
+
 function capacityReached(step, runId = state.selectedAdventureRunId) {
   return runsForStep(step.id, runId).length >= stepCapacity(step)
 }
@@ -583,6 +997,10 @@ function standaloneCapacity(offer) {
 
 function standaloneCapacityReached(questKey) {
   const offer = getStandaloneOffer(questKey)
+  if (openStandaloneRuns(questKey).some((run) => runHasParticipantSlot(run, participationPolicyForStandalone(questKey)))) {
+    return false
+  }
+
   return runsForStandaloneQuest(questKey).length >= standaloneCapacity(offer)
 }
 
@@ -592,6 +1010,14 @@ function ownFramePhoto(actorId, runId = state.selectedAdventureRunId) {
     item.type === "photo" &&
     item.subjectId === runId &&
     item.id.includes("frame-photo")
+  ))
+}
+
+function ownRunPhoto(actorId, runId) {
+  return state.evidence.find((item) => (
+    item.createdBy === actorId &&
+    item.type === "photo" &&
+    item.subjectId === runId
   ))
 }
 
@@ -679,15 +1105,15 @@ function renderAvatarGroup(personIds) {
 
 function renderAssigneeLabel(runs, fallbackText) {
   if (!runs.length) return fallbackText ? `<span>${fallbackText}</span>` : ""
+  const personIds = Array.from(new Set(runs.flatMap(runParticipantIds)))
+  if (!personIds.length) return fallbackText ? `<span>${fallbackText}</span>` : ""
 
   return `
     <span class="assignee-list">
-      ${runs.map((run) => `
-        <span class="assignee-pill">
-          ${renderTinyAvatar(run.actorId)}
-          <span>${personName(run.actorId)}</span>
-        </span>
-      `).join("")}
+      <span class="assignee-pill">
+        ${renderAvatarGroup(personIds)}
+        <span>${personIds.map(personName).join(", ")}</span>
+      </span>
     </span>
   `
 }
@@ -699,11 +1125,7 @@ function renderItemImage(src, label, className = "item-image") {
 }
 
 function runsForPerson(personId) {
-  return state.runs.filter((run) => run.actorId === personId && isActiveRun(run))
-}
-
-function openWorkRunForPerson(personId) {
-  return runsForPerson(personId).find((run) => ["accepted", "in-progress"].includes(run.status))
+  return state.runs.filter((run) => runHasParticipant(run, personId) && isActiveRun(run))
 }
 
 function confirmedRunsForPerson(personId) {
@@ -713,7 +1135,7 @@ function confirmedRunsForPerson(personId) {
 function completedAdventureRunsForPerson(personId) {
   return adventureRuns().filter((run) => (
     run.status === "completed" &&
-    runsForAdventureRun(run.id).some((questRun) => questRun.actorId === personId && questRun.status === "confirmed")
+    runsForAdventureRun(run.id).some((questRun) => runHasParticipant(questRun, personId) && questRun.status === "confirmed")
   ))
 }
 
@@ -796,13 +1218,22 @@ function stepStatus(stepId, runId = state.selectedAdventureRunId) {
 
 function standaloneQuestStatus(questKey) {
   const runs = runsForStandaloneQuest(questKey)
-  if (runs.some((run) => run.status === "confirmed")) return "confirmed"
-  if (runs.some((run) => run.status === "completed")) return "completed"
   if (runs.some((run) => run.status === "accepted")) return "accepted"
+  if (runs.some((run) => run.status === "open")) return "suggested"
+  if (runs.some((run) => run.status === "completed")) return "completed"
+  if (runs.length && runs.every((run) => run.status === "confirmed")) return "confirmed"
   return "suggested"
 }
 
-function standaloneOfferLabel(offer) {
+function isStandaloneQuestHistory(questKey) {
+  const offer = getStandaloneOffer(questKey)
+  const runs = runsForStandaloneQuest(questKey)
+  if (offer?.repeatable) return false
+  return runs.length > 0 && runs.every((run) => run.status === "confirmed")
+}
+
+function standaloneOfferLabel(offer, questKey = offer?.questKey) {
+  if (offer?.runPolicy?.type === "scheduled") return weekdayRangeLabel(recurrenceRuleForQuest(questKey).weekdays)
   if (offer?.repeatable && offer.cadence === "daily") return "Täglich"
   return "Einmalig"
 }
@@ -821,7 +1252,10 @@ function completionClaim(questKey) {
 }
 
 function confirmationClaim(run) {
-  const actor = personName(run.actorId)
+  const actors = runParticipantIds(run).map(personName)
+  const actor = actors.length > 1
+    ? `${actors.slice(0, -1).join(", ")} und ${actors.at(-1)}`
+    : actors[0] || "Jemand"
   const quest = getQuest(run.questKey)
   if (quest?.confirmationClaim) return quest.confirmationClaim.replaceAll("{actor}", actor)
 
@@ -835,7 +1269,6 @@ function confirmationClaim(run) {
 }
 
 function canStartAdventure(roleId) {
-  if (isStudent(roleId) && openWorkRunForPerson(roleId)) return false
   return isStudent(roleId)
 }
 
@@ -854,7 +1287,7 @@ function createAdventureRun(actorId) {
   addEvent(`${personName(actorId)} hat das Adventure ${title} gestartet.`, {
     scopes: ["global", "adventure"],
     adventureRunId: run.id,
-    actorId
+    personId: actorId
   })
 
   return run
@@ -863,13 +1296,12 @@ function createAdventureRun(actorId) {
 function acceptStep(actorId, stepId) {
   const step = getStep(stepId)
   let activeAdventureRun = adventureRun()
-  const openWorkRun = openWorkRunForPerson(actorId)
+  const joinableRun = activeAdventureRun ? joinableRunForStep(actorId, step, activeAdventureRun.id) : null
   if (
     !step ||
     !isStudent(actorId) ||
     findRun(actorId, stepId) ||
-    (activeAdventureRun && capacityReached(step)) ||
-    (openWorkRun && openWorkRun.adventureStepRelationId !== stepId)
+    (activeAdventureRun && !joinableRun && capacityReached(step))
   ) return
 
   if (!activeAdventureRun) {
@@ -878,14 +1310,33 @@ function acceptStep(actorId, stepId) {
   }
 
   const quest = getQuestForStep(step)
+  const schedule = stepSchedule(step)
+  if (joinableRun) {
+    addRunParticipant(joinableRun, actorId)
+    joinableRun.status = "accepted"
+    addParticipantToAdventureRun(activeAdventureRun, actorId)
+    addEvent(`${personName(actorId)} macht in ${activeAdventureRun.title} bei "${quest.title}" mit.`, {
+      scopes: ["adventure", "questRun"],
+      adventureRunId: activeAdventureRun.id,
+      questRunId: joinableRun.id,
+      personId: actorId
+    })
+    saveState()
+    render()
+    return
+  }
+
   const run = {
-    id: `quest-run:${actorId}-${slug(activeAdventureRun.id)}-${slug(step.id)}`,
+    id: `quest-run:${slug(activeAdventureRun.id)}-${slug(step.id)}-${state.runs.length + 1}`,
     questKey: step.questKey,
     questId: quest.id,
-    actorId,
+    participants: [{ personId: actorId, status: "active" }],
     adventureRunId: activeAdventureRun.id,
     adventureStepRelationId: step.id,
     status: "accepted",
+    locationId: step.meta.locationId || scenario.adventure?.locationId || null,
+    startsAt: schedule?.startsAt || null,
+    endsAt: schedule?.endsAt || null,
     createdAt: Date.now(),
     completion: null
   }
@@ -896,7 +1347,7 @@ function acceptStep(actorId, stepId) {
     scopes: ["adventure", "questRun"],
     adventureRunId: activeAdventureRun.id,
     questRunId: run.id,
-    actorId
+    personId: actorId
   })
   saveState()
   render()
@@ -905,7 +1356,15 @@ function acceptStep(actorId, stepId) {
 function completeStep(actorId, stepId) {
   const step = getStep(stepId)
   const run = findRun(actorId, stepId)
-  if (!step || !run || run.status !== "accepted" || !dependenciesMet(stepId)) return
+  const policy = participationPolicyForStep(step)
+  if (
+    !step ||
+    !run ||
+    run.status !== "accepted" ||
+    !runHasEnoughParticipants(run, policy) ||
+    !dependenciesMet(stepId) ||
+    !runWindowStarted(run)
+  ) return
 
   const evidenceRefs = []
   if (step.questKey === "documentation") {
@@ -915,6 +1374,7 @@ function completeStep(actorId, stepId) {
 
   run.status = "completed"
   run.completedAt = Date.now()
+  markRunParticipants(run, "completed")
   run.completion = {
     claim: completionClaim(step.questKey),
     evidenceRefs
@@ -924,65 +1384,96 @@ function completeStep(actorId, stepId) {
     scopes: ["adventure", "questRun"],
     adventureRunId: run.adventureRunId,
     questRunId: run.id,
-    actorId
+    personId: actorId
   })
   saveState()
   render()
 }
 
-function acceptStandaloneQuest(actorId, questKey) {
+function createStandaloneRun(actorId, questKey) {
   const quest = getQuest(questKey)
   const offer = getStandaloneOffer(questKey)
-  const openWorkRun = openWorkRunForPerson(actorId)
-  if (
-    !quest ||
-    !offer ||
-    !isStudent(actorId) ||
-    findStandaloneRun(actorId, questKey) ||
-    standaloneCapacityReached(questKey) ||
-    openWorkRun
-  ) return
-
   const periodKey = standalonePeriodKey(offer)
-  const run = {
-    id: `quest-run:${actorId}-${slug(quest.id)}${periodKey ? `-${periodKey}` : ""}`,
+
+  return {
+    id: `quest-run:${slug(quest.id)}${periodKey ? `-${periodKey}` : ""}-${state.runs.length + 1}`,
     questKey,
     questId: quest.id,
-    actorId,
+    participants: [{ personId: actorId, status: "active" }],
     adventureRunId: null,
     adventureStepRelationId: null,
     periodKey,
     status: "accepted",
+    locationId: offer?.locationId || quest.locationId || null,
+    startsAt: offer?.schedule?.startsAt || quest.schedule?.startsAt || null,
+    endsAt: offer?.schedule?.endsAt || quest.schedule?.endsAt || null,
     createdAt: Date.now(),
     completion: null
   }
+}
 
-  state.runs.push(run)
-  addEvent(`${personName(actorId)} hat die Aufgabe "${quest.title}" übernommen.`, {
+function materializeStandaloneRun(run) {
+  const materializedRun = clone(run)
+  delete materializedRun.virtual
+  return materializedRun
+}
+
+function acceptStandaloneQuest(actorId, questKey, runId = null) {
+  const quest = getQuest(questKey)
+  const offer = getStandaloneOffer(questKey)
+  const selectedOpenRun = runId ? standaloneRunOption(questKey, runId) : nextOpenStandaloneRun(questKey)
+  const canUseSelectedRun = selectedOpenRun &&
+    selectedOpenRun.questKey === questKey &&
+    selectedOpenRun.status === "open" &&
+    !runHasParticipant(selectedOpenRun, actorId) &&
+    runCanStillBeAccepted(selectedOpenRun) &&
+    runHasParticipantSlot(selectedOpenRun, participationPolicyForStandalone(questKey))
+  if (
+    !quest ||
+    !offer ||
+    !isStudent(actorId) ||
+    (!allowsMultipleStandaloneRuns(questKey) && findStandaloneRun(actorId, questKey)) ||
+    (runId && !canUseSelectedRun) ||
+    (!canUseSelectedRun && isScheduledStandaloneQuest(questKey)) ||
+    (!canUseSelectedRun && standaloneCapacityReached(questKey))
+  ) return
+
+  const run = canUseSelectedRun
+    ? (selectedOpenRun.virtual ? materializeStandaloneRun(selectedOpenRun) : selectedOpenRun)
+    : createStandaloneRun(actorId, questKey)
+  addRunParticipant(run, actorId)
+  run.status = "accepted"
+
+  if (!canUseSelectedRun || selectedOpenRun?.virtual) state.runs.push(run)
+  addEvent(`${personName(actorId)} hat die Aufgabe "${quest.title}"${run.startsAt ? ` für ${formatScheduleDate(run)} ${formatScheduleTime(run)}` : ""} übernommen.`, {
     scopes: ["global", "questRun"],
     questRunId: run.id,
-    actorId
+    personId: actorId
   })
   saveState()
   render()
 }
 
-function completeStandaloneQuest(actorId, questKey) {
+function completeStandaloneQuest(actorId, questKey, runId = null) {
   const quest = getQuest(questKey)
-  const run = findStandaloneRun(actorId, questKey)
-  if (!quest || !run || run.status !== "accepted") return
+  const run = runId ? getRun(runId) : findStandaloneRun(actorId, questKey)
+  if (!quest || !run || run.status !== "accepted" || !runHasParticipant(run, actorId) || !runWindowStarted(run)) return
 
   run.status = "completed"
   run.completedAt = Date.now()
+  markRunParticipants(run, "completed")
+  const evidenceRefs = state.evidence
+    .filter((item) => item.subjectId === run.id)
+    .map((item) => item.id)
   run.completion = {
     claim: completionClaim(questKey),
-    evidenceRefs: []
+    evidenceRefs
   }
 
   addEvent(`${personName(actorId)} hat die Aufgabe "${quest.title}" fertig gemeldet.`, {
     scopes: ["global", "questRun"],
     questRunId: run.id,
-    actorId
+    personId: actorId
   })
   saveState()
   render()
@@ -1022,7 +1513,38 @@ function postFramePhoto(actorId) {
     scopes: ["adventure", "questRun"],
     adventureRunId: activeAdventureRun.id,
     questRunId: run.id,
-    actorId
+    personId: actorId
+  })
+  saveState()
+  render()
+}
+
+function postRunPhoto(actorId, runId) {
+  const run = getRun(runId)
+  if (!run || !runHasParticipant(run, actorId) || !["accepted", "completed"].includes(run.status) || ownRunPhoto(actorId, run.id)) return
+
+  const quest = getQuest(run.questKey)
+  const evidenceId = `evidence:${actorId}-${slug(run.id)}-photo`
+  state.evidence.push({
+    id: evidenceId,
+    type: "photo",
+    createdBy: actorId,
+    subjectId: run.id,
+    caption: `Foto zu "${quest.title}", gepostet von ${personName(actorId)}.`,
+    supports: [run.id]
+  })
+
+  if (run.completion) {
+    const refs = new Set(run.completion.evidenceRefs || [])
+    refs.add(evidenceId)
+    run.completion.evidenceRefs = Array.from(refs)
+  }
+
+  addEvent(`${personName(actorId)} hat ein Foto zu "${quest.title}" gepostet.`, {
+    scopes: [run.adventureRunId ? "adventure" : "global", "questRun"],
+    adventureRunId: run.adventureRunId || null,
+    questRunId: run.id,
+    personId: actorId
   })
   saveState()
   render()
@@ -1037,6 +1559,7 @@ function confirmRun(runId, issuerId) {
   state.confirmations.push({
     id: `confirmation:${run.id}`,
     subjectId: run.id,
+    subjectParticipantIds: runParticipantIds(run),
     issuerId,
     claim,
     trustLevel: "server-confirmed",
@@ -1045,11 +1568,12 @@ function confirmRun(runId, issuerId) {
 
   run.status = "confirmed"
   run.confirmedAt = Date.now()
+  markRunParticipants(run, "confirmed")
   addEvent(`${personName(issuerId)} hat bestätigt: ${claim}`, {
     scopes,
     adventureRunId: run.adventureRunId || null,
     questRunId: run.id,
-    actorId: issuerId
+    personId: issuerId
   })
   if (run.adventureRunId) completeAdventureRun(run.adventureRunId, "system", { renderAfter: false })
   saveState()
@@ -1077,6 +1601,7 @@ function completeAdventureRun(runId = state.selectedAdventureRunId, issuerId = "
     state.confirmations.push({
       id: confirmationId,
       subjectId: activeAdventureRun.id,
+      subjectParticipantIds: participantIdsForAdventureRun(activeAdventureRun),
       issuerId,
       claim: `${activeAdventureRun.title}: ${scenario.adventure.resultBadgeTitle || scenario.adventure.title}.`,
       trustLevel: "server-confirmed",
@@ -1091,7 +1616,7 @@ function completeAdventureRun(runId = state.selectedAdventureRunId, issuerId = "
   addEvent(`${eventText} World State: ${metricLabel} = ${state.worldState[PRIMARY_WORLD_METRIC_KEY]}.`, {
     scopes: ["global", "adventure"],
     adventureRunId: activeAdventureRun.id,
-    actorId: scenario.roles[issuerId] ? issuerId : null,
+    personId: scenario.roles[issuerId] ? issuerId : null,
     public: true
   })
   if (options.renderAfter !== false) {
@@ -1219,7 +1744,34 @@ function render() {
 function renderAppShell() {
   applyGamePackVisuals()
   appTitle.textContent = scenario.campaign?.title || scenario.title || "Real Life Game"
+  renderContextMenu()
+  renderMainTabs()
   renderUserMenu()
+}
+
+function renderContextMenu() {
+  if (!contextSwitchOptions) return
+
+  const bundle = currentSimulationBundle()
+  const campaigns = Object.values(bundle?.campaigns || {})
+  contextSwitchOptions.innerHTML = campaigns
+    .map((campaign) => `
+      <button class="context-switch-option ${campaign.id === scenario.campaign?.id ? "is-active" : ""}" type="button" data-campaign="${campaign.id}" ${campaign.id === scenario.campaign?.id ? "aria-current=\"true\"" : ""}>
+        <span class="context-switch-title">${campaign.title}</span>
+        <span class="context-switch-meta">${bundle?.gamePacks?.[campaign.gamePackId]?.title || "Game Pack"}</span>
+      </button>
+    `)
+    .join("")
+}
+
+function renderMainTabs() {
+  if (!mainTabs) return
+
+  mainTabs.innerHTML = MAIN_TABS.map((tab) => `
+    <button class="tab-button ${state.selectedTab === tab.id ? "is-active" : ""}" type="button" data-tab="${tab.id}" ${state.selectedTab === tab.id ? "aria-current=\"page\"" : ""}>
+      ${tab.label}
+    </button>
+  `).join("")
 }
 
 function renderUserMenu() {
@@ -1257,6 +1809,20 @@ function renderUserOptionAvatar(role) {
 }
 
 function renderQuestSurface() {
+  if (state.selectedTab === "map") {
+    surfaceHeading.innerHTML = `<p class="eyebrow">Karte</p>`
+    surfaceNav.innerHTML = ""
+    questView.innerHTML = renderMapView()
+    return
+  }
+
+  if (state.selectedTab === "calendar") {
+    surfaceHeading.innerHTML = `<p class="eyebrow">Kalender</p>`
+    surfaceNav.innerHTML = ""
+    questView.innerHTML = renderCalendarView()
+    return
+  }
+
   const selectedStep = state.selectedStepId ? getStep(state.selectedStepId) : null
   const selectedStandaloneQuest = state.selectedStandaloneQuestKey ? getQuest(state.selectedStandaloneQuestKey) : null
 
@@ -1314,6 +1880,251 @@ function renderQuestOverview() {
   `
 }
 
+function scheduledItems() {
+  const items = []
+
+  stepEntries().forEach(([, step]) => {
+    const quest = getQuestForStep(step)
+    items.push({
+      id: `schedule:template:${step.id}`,
+      kind: "Adventure-Vorlage",
+      title: quest.title,
+      contextTitle: scenario.adventure.title,
+      status: "suggested",
+      questKey: step.questKey,
+      stepId: step.id,
+      adventureRunId: "",
+      location: stepLocation(step),
+      schedule: stepSchedule(step),
+      participantIds: []
+    })
+  })
+
+  adventureRuns().forEach((run) => {
+    stepEntries().forEach(([, step]) => {
+      const quest = getQuestForStep(step)
+      const runs = runsForStep(step.id, run.id)
+      items.push({
+        id: `schedule:${run.id}:${step.id}`,
+        kind: "Adventure",
+        title: quest.title,
+        contextTitle: run.title,
+        status: stepStatus(step.id, run.id),
+        questKey: step.questKey,
+        stepId: step.id,
+        adventureRunId: run.id,
+        location: stepLocation(step),
+        schedule: stepSchedule(step),
+        participantIds: runs.flatMap(runParticipantIds)
+      })
+    })
+  })
+
+  standaloneQuestEntries().forEach(([questKey]) => {
+    const quest = getQuest(questKey)
+    const runs = runsForStandaloneQuest(questKey)
+    if (runs.length) {
+      runs.forEach((run) => {
+        items.push({
+          id: `schedule:standalone:${run.id}`,
+          kind: "QuestRun",
+          title: quest.title,
+          contextTitle: questRunContextLabel(run),
+          status: run.status,
+          questKey,
+          runId: run.id,
+          location: getLocation(run.locationId) || standaloneLocation(questKey),
+          schedule: run,
+          participantIds: runParticipantIds(run)
+        })
+      })
+      return
+    }
+
+    items.push({
+      id: `schedule:standalone:${questKey}`,
+      kind: "Quest",
+      title: quest.title,
+      contextTitle: standaloneOfferLabel(getStandaloneOffer(questKey), questKey),
+      status: standaloneQuestStatus(questKey),
+      questKey,
+      location: standaloneLocation(questKey),
+      schedule: standaloneSchedule(questKey),
+      participantIds: []
+    })
+  })
+
+  return items.sort((a, b) => scheduleTimestamp(a.schedule) - scheduleTimestamp(b.schedule))
+}
+
+function scheduleItemActionAttrs(item) {
+  const attrs = [`data-action="view-schedule-item"`]
+  if (item.adventureRunId !== undefined) attrs.push(`data-adventure-run-id="${item.adventureRunId || ""}"`)
+  if (item.stepId) attrs.push(`data-step="${item.stepId}"`)
+  if (item.questKey && !item.stepId) attrs.push(`data-quest="${item.questKey}"`)
+  if (item.runId) attrs.push(`data-run-id="${item.runId}"`)
+  return attrs.join(" ")
+}
+
+function openScheduleItem(target) {
+  if (target.dataset.quest) {
+    selectStandaloneQuest(target.dataset.quest)
+    return
+  }
+
+  selectAdventureStep(target.dataset.adventureRunId || null, target.dataset.step || null)
+}
+
+function renderMapView() {
+  const items = scheduledItems()
+  const locatedItems = items.filter((item) => item.location)
+  const grouped = groupItemsByLocation(locatedItems)
+
+  return `
+    <div class="surface-stack">
+      <section class="panel map-view">
+        <div class="view-heading">
+          <div>
+            <h3>Karte</h3>
+            <p class="meta">Aufgaben und Adventures mit Geodaten aus dem SimulationBundle.</p>
+          </div>
+          <span class="status suggested">${grouped.length} Orte</span>
+        </div>
+        <div class="map-layout">
+          <div class="map-canvas" aria-label="Karte der Spielorte">
+            <div class="map-grid-lines" aria-hidden="true"></div>
+            ${grouped.map(renderMapMarker).join("")}
+          </div>
+          <div class="map-side-list">
+            ${locatedItems.map((item) => renderScheduleItem(item, "map")).join("")}
+          </div>
+        </div>
+      </section>
+    </div>
+  `
+}
+
+function groupItemsByLocation(items) {
+  const groups = new Map()
+  items.forEach((item) => {
+    const id = item.location.id || item.location.label
+    if (!groups.has(id)) {
+      groups.set(id, {
+        location: item.location,
+        items: []
+      })
+    }
+
+    groups.get(id).items.push(item)
+  })
+
+  return Array.from(groups.values())
+}
+
+function renderMapMarker(group) {
+  const location = group.location
+  const firstItem = group.items[0]
+  const x = Number.isFinite(location.map?.x) ? location.map.x : 50
+  const y = Number.isFinite(location.map?.y) ? location.map.y : 50
+  const status = dominantStatus(group.items.map((item) => item.status))
+
+  return `
+    <button class="map-marker status-${visualStatus(status)}" type="button" style="left:${x}%;top:${y}%;" ${scheduleItemActionAttrs(firstItem)}>
+      <span class="status-marker status-${visualStatus(status)}" aria-hidden="true"></span>
+      <span>
+        <strong>${location.label}</strong>
+        <small>${group.items.length} Aufgaben</small>
+      </span>
+    </button>
+  `
+}
+
+function dominantStatus(statuses) {
+  if (statuses.some((status) => visualStatus(status) === "active")) return "accepted"
+  if (statuses.some((status) => visualStatus(status) === "open")) return "suggested"
+  if (statuses.some((status) => visualStatus(status) === "completed")) return "completed"
+  if (statuses.some((status) => visualStatus(status) === "confirmed")) return "confirmed"
+  return statuses[0] || "suggested"
+}
+
+function renderCalendarView() {
+  const items = scheduledItems()
+  const groups = groupItemsByDate(items)
+
+  return `
+    <div class="surface-stack">
+      <section class="panel calendar-view">
+        <div class="view-heading">
+          <div>
+            <h3>Kalender</h3>
+            <p class="meta">Zeitfenster der Aufgaben aus dem SimulationBundle.</p>
+          </div>
+          <span class="status suggested">${items.length} Termine</span>
+        </div>
+        <div class="calendar-days">
+          ${groups.map(renderCalendarDay).join("")}
+        </div>
+      </section>
+    </div>
+  `
+}
+
+function groupItemsByDate(items) {
+  const groups = new Map()
+  items.forEach((item) => {
+    const key = scheduleDateKey(item.schedule)
+    if (!groups.has(key)) {
+      groups.set(key, [])
+    }
+    groups.get(key).push(item)
+  })
+
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, dayItems]) => ({
+      key,
+      label: key === "unscheduled" ? "Ohne Termin" : formatScheduleDate(dayItems[0].schedule),
+      items: dayItems.sort((a, b) => scheduleTimestamp(a.schedule) - scheduleTimestamp(b.schedule))
+    }))
+}
+
+function renderCalendarDay(group) {
+  return `
+    <section class="calendar-day">
+      <h3>${group.label}</h3>
+      <div class="calendar-item-list">
+        ${group.items.map((item) => renderScheduleItem(item, "calendar")).join("")}
+      </div>
+    </section>
+  `
+}
+
+function renderScheduleItem(item, variant) {
+  return `
+    <button class="schedule-item ${variant === "map" ? "is-map-item" : ""}" type="button" ${scheduleItemActionAttrs(item)}>
+      <span class="schedule-time">${formatScheduleTime(item.schedule)}</span>
+      <span class="schedule-main">
+        <strong>${item.title}</strong>
+        <span>${item.contextTitle} · ${item.kind}</span>
+        ${item.location ? `<small>${item.location.label}${locationCoordinateText(item.location)}</small>` : ""}
+      </span>
+      <span class="schedule-side">
+        ${renderStatusMarker(item.status)}
+        ${renderAvatarGroup(item.participantIds)}
+      </span>
+    </button>
+  `
+}
+
+function locationCoordinateText(location) {
+  if (!Number.isFinite(location.lat) || !Number.isFinite(location.lng)) return ""
+  return ` · ${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
+}
+
+function runCountLabel(count) {
+  return `${count} ${count === 1 ? "Termin" : "Termine"}`
+}
+
 function eventHasScope(event, scope) {
   return Array.isArray(event.scopes) && event.scopes.includes(scope)
 }
@@ -1351,12 +2162,12 @@ function renderTimelineBlock(title, events, emptyText) {
 }
 
 function renderTimelineEvent(event) {
-  const hasActor = Boolean(event.actorId && scenario.roles[event.actorId])
+  const hasActor = Boolean(event.personId && scenario.roles[event.personId])
 
   return `
     <li class="timeline-event ${hasActor ? "has-actor" : "is-system"}">
       <span class="timeline-avatar-slot">
-        ${hasActor ? renderTimelineAvatar(event.actorId) : `<span class="timeline-system-marker" aria-hidden="true"></span>`}
+        ${hasActor ? renderTimelineAvatar(event.personId) : `<span class="timeline-system-marker" aria-hidden="true"></span>`}
       </span>
       <span class="timeline-event-body">
         <span class="timeline-event-copy">${event.text}</span>
@@ -1383,6 +2194,48 @@ function formatRelativeTime(createdAt) {
   if (diff < 2 * day) return "gestern"
 
   return `vor ${Math.floor(diff / day)} d`
+}
+
+function scheduleTimestamp(schedule) {
+  const value = schedule?.startsAt || schedule?.date
+  const timestamp = Date.parse(value)
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
+function formatScheduleDate(schedule) {
+  const timestamp = scheduleTimestamp(schedule)
+  if (!timestamp) return "ohne Datum"
+
+  return new Intl.DateTimeFormat("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit"
+  }).format(new Date(timestamp))
+}
+
+function formatScheduleTime(schedule) {
+  const start = scheduleTimestamp(schedule)
+  if (!start) return "zeitlich offen"
+
+  const timeFormatter = new Intl.DateTimeFormat("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  })
+  const startText = timeFormatter.format(new Date(start))
+  const end = Date.parse(schedule?.endsAt)
+  if (!Number.isFinite(end)) return startText
+
+  return `${startText}-${timeFormatter.format(new Date(end))}`
+}
+
+function scheduleDateKey(schedule) {
+  const timestamp = scheduleTimestamp(schedule)
+  if (!timestamp) return "unscheduled"
+
+  const date = new Date(timestamp)
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${date.getFullYear()}-${month}-${day}`
 }
 
 function renderTimelineAvatar(personId) {
@@ -1433,12 +2286,12 @@ function availableStepsForAdventureRun(run) {
 
   return stepEntries()
     .map(([, step]) => step)
-    .filter((step) => !capacityReached(step, run.id))
+    .filter((step) => stepHasParticipantSlot(step, run.id))
 }
 
 function ownOpenRunInAdventureRun(actorId, runId) {
   return runsForAdventureRun(runId).find((run) => (
-    run.actorId === actorId &&
+    runHasParticipant(run, actorId) &&
     ["accepted", "in-progress"].includes(run.status)
   ))
 }
@@ -1499,7 +2352,6 @@ function renderAdventureActionRow(participants, buttonMarkup) {
 
 function renderStudentAdventureRunActions(run, actorId, participants = []) {
   const ownOpenRun = ownOpenRunInAdventureRun(actorId, run.id)
-  const openWorkRun = openWorkRunForPerson(actorId)
   const freeSteps = availableStepsForAdventureRun(run)
   const alreadyParticipant = participantIdsForAdventureRun(run).includes(actorId)
 
@@ -1509,10 +2361,6 @@ function renderStudentAdventureRunActions(run, actorId, participants = []) {
         ${actionLabel("continue", "Weitermachen")}
       </button>
     `)
-  }
-
-  if (openWorkRun) {
-    return ""
   }
 
   if (freeSteps.length) {
@@ -1584,6 +2432,7 @@ function renderStandaloneQuestCard(questKey, offer) {
   const quest = getQuest(questKey)
   const status = standaloneQuestStatus(questKey)
   const runs = runsForStandaloneQuest(questKey)
+  const assignedRuns = runs.filter((run) => runParticipantIds(run).length)
   const ownRun = isStudent(state.selectedRole) ? findStandaloneRun(state.selectedRole, questKey) : null
   const hasResultStatus = isHistoryStatus(status)
   const cardClass = [
@@ -1591,7 +2440,7 @@ function renderStandaloneQuestCard(questKey, offer) {
     "standalone-quest-card",
     hasResultStatus ? "is-history" : "",
     ownRun && ["accepted", "in-progress"].includes(ownRun.status) ? "is-mine" : "",
-    runs.length && !ownRun ? "is-occupied" : ""
+    assignedRuns.length && !ownRun ? "is-occupied" : ""
   ].filter(Boolean).join(" ")
 
   return `
@@ -1607,9 +2456,9 @@ function renderStandaloneQuestCard(questKey, offer) {
       </span>
       <span class="field-list card-field-list">${compactFieldChips(quest.developmentFields)}</span>
       <span class="quest-card-bottom">
-        ${renderAssigneeLabel(runs, "")}
+        ${renderAssigneeLabel(assignedRuns, runs.length ? runCountLabel(runs.length) : "")}
         <span class="quest-card-bottom-meta">
-          <span class="requirement-tag standalone-tag">${standaloneOfferLabel(offer)}</span>
+          <span class="requirement-tag standalone-tag">${standaloneOfferLabel(offer, questKey)}</span>
           ${hasResultStatus ? renderStatusBadge(status, { className: "card-status result-card-status" }) : ""}
         </span>
       </span>
@@ -1626,22 +2475,59 @@ function renderStandaloneQuestActions(questKey, showDetails = true) {
 
 function renderStudentStandaloneQuestActions(questKey, actorId, showDetails = true) {
   const run = findStandaloneRun(actorId, questKey)
+  const nextOpenRun = nextOpenStandaloneRun(questKey)
+  const openRuns = openStandaloneRuns(questKey)
   const assignedToOther = !run && standaloneCapacityReached(questKey)
-  const openWorkRun = openWorkRunForPerson(actorId)
 
   if (assignedToOther) {
     return ""
   }
 
-  if (!run && openWorkRun) {
-    return ""
-  }
+  if (allowsMultipleStandaloneRuns(questKey) && nextOpenRun) {
+    if (openRuns.length > 1) {
+      return `
+        <div class="standalone-actions">
+          <div class="action-row">
+            <button class="action-button" type="button" data-action="view-standalone" data-quest="${questKey}">
+              Termin wählen
+            </button>
+          </div>
+        </div>
+      `
+    }
 
-  if (!run) {
     return `
       <div class="standalone-actions">
         <div class="action-row">
-          <button class="action-button" type="button" data-action="accept-standalone" data-actor="${actorId}" data-quest="${questKey}">
+          <button class="action-button" type="button" data-action="accept-standalone" data-actor="${actorId}" data-quest="${questKey}" data-run-id="${nextOpenRun.id}">
+            ${actionLabel("acceptQuest", "Aufgabe übernehmen")}
+          </button>
+        </div>
+      </div>
+    `
+  }
+
+  if (!run) {
+    if (!nextOpenRun && isScheduledStandaloneQuest(questKey)) {
+      return ""
+    }
+
+    if (openRuns.length > 1) {
+      return `
+        <div class="standalone-actions">
+          <div class="action-row">
+            <button class="action-button" type="button" data-action="view-standalone" data-quest="${questKey}">
+              Termin wählen
+            </button>
+          </div>
+        </div>
+      `
+    }
+
+    return `
+      <div class="standalone-actions">
+        <div class="action-row">
+          <button class="action-button" type="button" data-action="accept-standalone" data-actor="${actorId}" data-quest="${questKey}" ${nextOpenRun ? `data-run-id="${nextOpenRun.id}"` : ""}>
             ${actionLabel("acceptQuest", "Aufgabe übernehmen")}
           </button>
         </div>
@@ -1653,10 +2539,12 @@ function renderStudentStandaloneQuestActions(questKey, actorId, showDetails = tr
     return ""
   }
 
+  const isStartBlocked = !runWindowStarted(run)
   return `
     <div class="standalone-actions">
+      ${isStartBlocked ? `<p class="run-action-hint">${runStartHint(run)}</p>` : ""}
       <div class="action-row">
-        <button class="action-button" type="button" data-action="complete-standalone" data-actor="${actorId}" data-quest="${questKey}">
+        <button class="action-button" type="button" data-action="complete-standalone" data-actor="${actorId}" data-quest="${questKey}" data-run-id="${run.id}" ${disabledAttr(isStartBlocked)}>
           ${actionLabel("completeQuest", "Fertig melden")}
         </button>
       </div>
@@ -1681,40 +2569,186 @@ function renderStandaloneQuestDetail(questKey) {
   const offer = getStandaloneOffer(questKey)
   const runs = runsForStandaloneQuest(questKey)
   const status = standaloneQuestStatus(questKey)
-  const policy = quest.evidencePolicy
-  const periodText = offer.repeatable && offer.cadence === "daily"
-    ? `Heute · ${todayKey()}`
+  const periodText = isScheduledStandaloneQuest(questKey)
+    ? recurrenceSummary(questKey)
+    : offer.repeatable && offer.cadence === "daily"
+    ? `${runCountLabel(runs.length)} geplant`
     : "Einmalige Aufgabe"
+  const location = standaloneLocation(questKey)
 
   return `
     <div class="stack">
-      <section class="panel quest-detail standalone-detail">
+      <section class="panel adventure-detail standalone-detail">
         <div class="adventure-detail-header">
           <div class="detail-title-row adventure-title-row">
             ${renderItemImage(quest.image, quest.title)}
             <div>
               <h3>${quest.title}</h3>
-              <p class="meta">Einzelaufgabe · kein Adventure</p>
+              <p class="meta">${periodText} · ${location?.label || "ortsunabhängig"}</p>
             </div>
           </div>
           <div class="detail-tags">
+            <span class="requirement-tag standalone-tag">Einzelaufgabe</span>
             ${renderStatusBadge(status)}
-            <span class="requirement-tag standalone-tag">${standaloneOfferLabel(offer)}</span>
           </div>
         </div>
-        <div class="field-list">${fieldChips(quest.developmentFields)}</div>
-        <div class="detail-grid">
-          <p class="meta">Rhythmus: ${periodText}</p>
-          <p class="meta">Kapazität: ${standaloneCapacity(offer)}</p>
-          <p class="meta">Kontext: Einzelaufgabe</p>
-          <p class="meta">Evidence: ${policy.required ? "erforderlich" : "optional"} · ${policy.acceptedTypes.join(", ")}</p>
+        ${renderRecurrenceControl(questKey)}
+        <div class="work-step-list standalone-run-list">
+          ${renderStandaloneDetailRows(questKey)}
         </div>
-        ${runs.length
-          ? runs.map((run) => renderRunSummary(run)).join("")
-          : `<p class="meta">Noch kein Beitrag zu dieser Aufgabe.</p>`}
-        ${renderStandaloneQuestActions(questKey, false)}
       </section>
     </div>
+  `
+}
+
+function renderRecurrenceControl(questKey) {
+  if (!isScheduledStandaloneQuest(questKey)) return ""
+
+  const rule = recurrenceRuleForQuest(questKey)
+  const editable = canConfirm(state.selectedRole)
+  const selectedWeekdays = new Set(rule.weekdays)
+
+  return `
+    <section class="recurrence-panel" aria-label="Wiederholung">
+      <div>
+        <h4>Wiederholung</h4>
+        <p class="meta">${recurrenceSummary(questKey)}</p>
+      </div>
+      ${editable
+        ? `
+          <div class="recurrence-controls">
+            <div class="weekday-toggle-group" aria-label="Wochentage">
+              ${WEEKDAY_OPTIONS.map((weekday) => `
+                <label class="weekday-toggle ${selectedWeekdays.has(weekday.value) ? "is-selected" : ""}">
+                  <input type="checkbox" data-recurrence-weekday="${weekday.value}" data-quest="${questKey}" ${selectedWeekdays.has(weekday.value) ? "checked" : ""}>
+                  <span>${weekday.label}</span>
+                </label>
+              `).join("")}
+            </div>
+            <label class="recurrence-until">
+              <span>Bis</span>
+              <input type="date" data-recurrence-until data-quest="${questKey}" value="${rule.until || ""}">
+            </label>
+          </div>
+        `
+        : ""}
+    </section>
+  `
+}
+
+function renderStandaloneDetailRows(questKey) {
+  const runs = runsForStandaloneQuest(questKey)
+
+  if (!runs.length && isScheduledStandaloneQuest(questKey)) {
+    return `
+      <section class="work-step standalone-run-step">
+        <div class="work-step-copy">
+          <h4>Kein offener Termin</h4>
+          <p class="meta">Die Wiederholung erzeugt aktuell keinen übernehmbaren Termin.</p>
+        </div>
+        <div class="work-step-tags">
+          ${renderStatusBadge("suggested")}
+          <span class="requirement-tag standalone-tag">${standaloneOfferLabel(getStandaloneOffer(questKey), questKey)}</span>
+        </div>
+        <div class="work-step-side">
+          <div class="work-step-actions is-empty"></div>
+        </div>
+      </section>
+    `
+  }
+
+  const rows = runs.length
+    ? runs
+    : [null]
+
+  return rows
+    .slice()
+    .sort(compareStandaloneDetailRuns)
+    .map((run) => renderStandaloneWorkRun(run, questKey))
+    .join("")
+}
+
+function compareStandaloneDetailRuns(a, b) {
+  if (!a || !b) return a ? -1 : b ? 1 : 0
+
+  const order = {
+    accepted: 0,
+    "in-progress": 0,
+    open: 1,
+    completed: 2,
+    confirmed: 3
+  }
+
+  return (order[a.status] ?? 4) - (order[b.status] ?? 4) ||
+    questRunTimestamp(a) - questRunTimestamp(b)
+}
+
+function renderStandaloneWorkRun(run, questKey) {
+  const quest = getQuest(questKey)
+  const offer = getStandaloneOffer(questKey)
+  const status = run?.status || "suggested"
+  const participantIds = run ? runParticipantIds(run) : []
+  const actionMarkup = renderStandaloneInlineAction(run, questKey)
+
+  return `
+    <section class="work-step standalone-run-step ${participantIds.length ? "is-assigned" : ""}">
+      <div class="work-step-copy">
+        <h4>${standaloneRunTitle(run, questKey)}</h4>
+        <div class="field-list card-field-list">${compactFieldChips(quest.developmentFields)}</div>
+        <p class="meta">${standaloneRunPlaceTimeLabel(run, questKey)}</p>
+      </div>
+      <div class="work-step-tags">
+        ${renderStatusBadge(status)}
+        <span class="requirement-tag standalone-tag">${standaloneOfferLabel(offer, questKey)}</span>
+      </div>
+      <div class="work-step-side">
+        ${renderStandaloneRunAssignees(participantIds)}
+        ${actionMarkup
+          ? `<div class="work-step-actions standalone-run-actions">${actionMarkup}</div>`
+          : `<div class="work-step-actions is-empty"></div>`}
+      </div>
+    </section>
+  `
+}
+
+function standaloneRunTitle(run, questKey) {
+  if (run?.startsAt) return formatScheduleDate(run)
+  return getQuest(questKey).title
+}
+
+function standaloneRunPlaceTimeLabel(run, questKey) {
+  const schedule = run || standaloneSchedule(questKey)
+  const location = getLocation(run?.locationId) || standaloneLocation(questKey)
+  const time = schedule?.startsAt ? formatScheduleTime(schedule) : "jederzeit"
+
+  return [
+    location?.label || "ortsunabhängig",
+    time
+  ].join(" · ")
+}
+
+function renderStandaloneRunAssignees(personIds) {
+  if (!personIds.length) return ""
+
+  return `
+    <div class="work-step-assignees">
+      <span class="work-step-assignee">
+        ${renderAvatarGroup(personIds)}
+        <span>${personIds.map(personName).join(", ")}</span>
+      </span>
+    </div>
+  `
+}
+
+function renderStandaloneInlineAction(run, questKey) {
+  if (run) return renderStandaloneRunAction(run, questKey)
+
+  if (!isStudent(state.selectedRole) || standaloneCapacityReached(questKey)) return ""
+
+  return `
+    <button class="action-button compact-action" type="button" data-action="accept-standalone" data-actor="${state.selectedRole}" data-quest="${questKey}">
+      ${actionLabel("acceptQuest", "Aufgabe übernehmen")}
+    </button>
   `
 }
 
@@ -1766,6 +2800,7 @@ function renderAdventureWorkStep(step) {
       <div class="work-step-copy">
         <h4>${quest.title}</h4>
         <div class="field-list card-field-list">${compactFieldChips(developmentFieldsForStep(step))}</div>
+        <p class="meta">${stepPlaceTimeLabel(step)}</p>
       </div>
       <div class="work-step-tags">
         ${renderRequirementTag(step)}
@@ -1778,6 +2813,15 @@ function renderAdventureWorkStep(step) {
   `
 }
 
+function stepPlaceTimeLabel(step) {
+  const location = stepLocation(step)
+  const schedule = stepSchedule(step)
+  return [
+    location?.label || "ortsunabhängig",
+    schedule ? `${formatScheduleDate(schedule)} · ${formatScheduleTime(schedule)}` : "jederzeit"
+  ].join(" · ")
+}
+
 function renderWorkStepAssignees(runs) {
   if (!runs.length) return ""
 
@@ -1785,8 +2829,8 @@ function renderWorkStepAssignees(runs) {
     <div class="work-step-assignees">
       ${runs.map((run) => `
         <span class="work-step-assignee">
-          ${renderTinyAvatar(run.actorId)}
-          <span>${personName(run.actorId)}</span>
+          ${renderAvatarGroup(runParticipantIds(run))}
+          <span>${runParticipantIds(run).map(personName).join(", ") || "frei"}</span>
         </span>
       `).join("")}
     </div>
@@ -1802,7 +2846,7 @@ function renderInlineStepActions(step) {
 function renderInlineStudentStepActions(step, actorId) {
   const activeAdventureRun = adventureRun()
   const run = findRun(actorId, step.id)
-  const assignedToOther = Boolean(activeAdventureRun) && !run && capacityReached(step)
+  const assignedToOther = Boolean(activeAdventureRun) && !run && !stepHasParticipantSlot(step, activeAdventureRun.id)
   const dependencyNote = activeAdventureRun ? dependencyText(step.id, activeAdventureRun.id) : ""
   const photo = ownFramePhoto(actorId)
   const canPostPhoto = step.questKey === "documentation" && run?.status === "accepted" && hasFrameResult() && !photo
@@ -1880,12 +2924,39 @@ function renderRunSummary(run) {
   return `
     <div class="run-summary">
       <div>
-        <strong>${personName(run.actorId)}</strong>
+        <strong>${runParticipantIds(run).map(personName).join(", ") || "Noch frei"}</strong>
         <p class="meta">${run.id}</p>
       </div>
       ${renderStatusBadge(run.status)}
     </div>
   `
+}
+
+function renderStandaloneRunAction(run, questKey) {
+  if (isStudent(state.selectedRole)) {
+    const ownRun = runHasParticipant(run, state.selectedRole)
+    const photo = ownRunPhoto(state.selectedRole, run.id)
+    if (run.status === "open") {
+      return `<button class="action-button compact-action" type="button" data-action="accept-standalone" data-actor="${state.selectedRole}" data-quest="${questKey}" data-run-id="${run.id}">${actionLabel("acceptQuest", "Aufgabe übernehmen")}</button>`
+    }
+    if (ownRun && run.status === "accepted") {
+      const isStartBlocked = !runWindowStarted(run)
+      return `
+        ${isStartBlocked ? `<span class="run-action-hint">${runStartHint(run)}</span>` : ""}
+        <button class="action-button compact-action" type="button" data-action="complete-standalone" data-actor="${state.selectedRole}" data-quest="${questKey}" data-run-id="${run.id}" ${disabledAttr(isStartBlocked)}>${actionLabel("completeQuest", "Fertig melden")}</button>
+        ${photo ? "" : `<button class="action-button secondary compact-action" type="button" data-action="post-run-photo" data-actor="${state.selectedRole}" data-run-id="${run.id}">${actionLabel("postPhoto", "Foto posten")}</button>`}
+      `
+    }
+    if (ownRun && run.status === "completed" && !photo) {
+      return `<button class="action-button secondary compact-action" type="button" data-action="post-run-photo" data-actor="${state.selectedRole}" data-run-id="${run.id}">${actionLabel("postPhoto", "Foto posten")}</button>`
+    }
+  }
+
+  if (canConfirm(state.selectedRole) && run.status === "completed" && !hasConfirmation(run.id)) {
+    return `<button class="action-button compact-action" type="button" data-action="confirm-run" data-run-id="${run.id}">${actionLabel("confirm", "Bestätigen")}</button>`
+  }
+
+  return ""
 }
 
 function renderQuestDetailActions(step) {
@@ -1910,7 +2981,7 @@ function renderStudentQuestDetail(step, actorId) {
   }
 
   const run = findRun(actorId, step.id)
-  const assignedToOther = !run && capacityReached(step)
+  const assignedToOther = !run && !stepHasParticipantSlot(step)
   const blocked = run?.status === "accepted" && !dependenciesMet(step.id)
   const dependencyNote = dependencyText(step.id)
   const photo = ownFramePhoto(actorId)
@@ -2060,10 +3131,11 @@ function renderCurrentWorkPanel(personId) {
 
   const openRuns = runsForPerson(personId).filter((run) => ["accepted", "in-progress"].includes(run.status))
   if (!openRuns.length) return ""
+  const label = openRuns.length === 1 ? "Aktuelle Aufgabe" : "Aktuelle Aufgaben"
 
   return `
     <section class="current-work-region">
-      <p class="eyebrow">Aktuelle Aufgabe</p>
+      <p class="eyebrow">${label}</p>
       <section class="panel current-work-panel">
         <div class="open-work-list">
           ${openRuns.map(renderOpenWorkItem).join("")}
@@ -2110,6 +3182,7 @@ function renderQuestLogBlock(runs) {
 function questRunTimestamp(run) {
   return timestampValue(run.confirmedAt) ||
     timestampValue(run.completedAt) ||
+    timestampValue(run.startsAt) ||
     timestampValue(run.createdAt) ||
     0
 }
@@ -2190,7 +3263,7 @@ function renderPeerRunStatus(run) {
 
 function renderStepActions(actorId, step, run, canPostPhoto, assignedToOther) {
   if (assignedToOther) {
-    const peerRuns = runsForStep(step.id).filter((item) => item.actorId !== actorId)
+    const peerRuns = runsForStep(step.id).filter((item) => !runHasParticipant(item, actorId))
 
     return `
       <div class="peer-run-list">
@@ -2199,16 +3272,15 @@ function renderStepActions(actorId, step, run, canPostPhoto, assignedToOther) {
     `
   }
 
-  const openWorkRun = openWorkRunForPerson(actorId)
-  if (!run && openWorkRun) {
-    return ""
-  }
-
   if (!run) {
+    const buttonLabel = joinableRunForStep(actorId, step)
+      ? actionLabel("join", "Mitmachen")
+      : actionLabel("acceptQuest", "Aufgabe übernehmen")
+
     return `
       <div class="action-row">
         <button class="action-button" type="button" data-action="accept-step" data-actor="${actorId}" data-step="${step.id}">
-          ${actionLabel("acceptQuest", "Aufgabe übernehmen")}
+          ${buttonLabel}
         </button>
       </div>
     `
@@ -2223,12 +3295,22 @@ function renderStepActions(actorId, step, run, canPostPhoto, assignedToOther) {
     `
   }
 
-  const completeDisabled = run.status !== "accepted" || !dependenciesMet(step.id)
+  const policy = participationPolicyForStep(step)
+  const isStartBlocked = !runWindowStarted(run)
+  const completeDisabled = run.status !== "accepted" || !runHasEnoughParticipants(run, policy) || !dependenciesMet(step.id) || isStartBlocked
+  const participantHint = run.status === "accepted" && !runHasEnoughParticipants(run, policy)
+    ? `<p class="meta">Wartet auf ${policy.minParticipants - runParticipantIds(run).length} weitere ${policy.minParticipants - runParticipantIds(run).length === 1 ? "Person" : "Personen"}.</p>`
+    : ""
+  const startHint = run.status === "accepted" && isStartBlocked
+    ? `<p class="meta">${runStartHint(run)}</p>`
+    : ""
   const photoButton = step.questKey === "documentation"
     ? `<button class="action-button secondary" type="button" data-action="post-frame-photo" data-actor="${actorId}" ${disabledAttr(!canPostPhoto)}>${actionLabel("postPhoto", "Foto posten")}</button>`
     : ""
 
   return `
+    ${participantHint}
+    ${startHint}
     <div class="action-row">
       <button class="action-button" type="button" data-action="complete-step" data-actor="${actorId}" data-step="${step.id}" ${disabledAttr(completeDisabled)}>
         ${actionLabel("completeQuest", "Fertig melden")}
@@ -2355,6 +3437,18 @@ function renderNode(label, status) {
 }
 
 document.addEventListener("click", (event) => {
+  const tabTarget = event.target.closest("[data-tab]")
+  if (tabTarget) {
+    setMainTab(tabTarget.dataset.tab)
+    return
+  }
+
+  const campaignTarget = event.target.closest("[data-campaign]")
+  if (campaignTarget) {
+    selectCampaign(campaignTarget.dataset.campaign)
+    return
+  }
+
   const roleTarget = event.target.closest("[data-role]")
   if (roleTarget) {
     setRole(roleTarget.dataset.role)
@@ -2367,17 +3461,36 @@ document.addEventListener("click", (event) => {
   const action = target.dataset.action
   if (action === "accept-step") acceptStep(target.dataset.actor, target.dataset.step)
   if (action === "complete-step") completeStep(target.dataset.actor, target.dataset.step)
-  if (action === "accept-standalone") acceptStandaloneQuest(target.dataset.actor, target.dataset.quest)
-  if (action === "complete-standalone") completeStandaloneQuest(target.dataset.actor, target.dataset.quest)
+  if (action === "accept-standalone") acceptStandaloneQuest(target.dataset.actor, target.dataset.quest, target.dataset.runId || null)
+  if (action === "complete-standalone") completeStandaloneQuest(target.dataset.actor, target.dataset.quest, target.dataset.runId || null)
   if (action === "post-frame-photo") postFramePhoto(target.dataset.actor)
+  if (action === "post-run-photo") postRunPhoto(target.dataset.actor, target.dataset.runId)
   if (action === "confirm-run" && canConfirm(state.selectedRole)) confirmRun(target.dataset.runId, state.selectedRole)
   if (action === "view-adventure") selectAdventure(target.dataset.adventureRunId)
   if (action === "view-standalone") selectStandaloneQuest(target.dataset.quest)
   if (action === "view-step") selectStep(target.dataset.step)
+  if (action === "view-schedule-item") openScheduleItem(target)
   if (action === "back-to-overview") showQuestOverview()
   if (action === "toggle-debug") {
     debugVisible = !debugVisible
     renderDebugVisibility()
+  }
+})
+
+document.addEventListener("change", (event) => {
+  const weekdayTarget = event.target.closest("[data-recurrence-weekday]")
+  if (weekdayTarget) {
+    setRecurrenceWeekday(
+      weekdayTarget.dataset.quest,
+      Number(weekdayTarget.dataset.recurrenceWeekday),
+      weekdayTarget.checked
+    )
+    return
+  }
+
+  const untilTarget = event.target.closest("[data-recurrence-until]")
+  if (untilTarget) {
+    setRecurrenceUntil(untilTarget.dataset.quest, untilTarget.value)
   }
 })
 
