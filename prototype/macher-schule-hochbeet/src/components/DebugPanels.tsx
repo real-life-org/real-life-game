@@ -6,7 +6,7 @@ const {
   scenario,
   PRIMARY_WORLD_METRIC_KEY,
   WORLD_TARGET,
-  stepEntries,
+  allStepEntries,
   adventureRuns
 } = domain
 
@@ -36,7 +36,7 @@ export function ModelInfo() {
       <div><strong>{window.SIMULATION_BUNDLE?.title || scenario.title}</strong><span>SimulationBundle</span></div>
       <div><strong>{scenario.campaign?.title}</strong><span>Kampagne</span></div>
       <div><strong>{scenario.gamePack?.title}</strong><span>Game Pack</span></div>
-      <div><strong>{Object.keys(scenario.quests || {}).length} Aufgaben · {stepEntries().length} Adventure-Aufgaben</strong><span>Datenumfang</span></div>
+      <div><strong>{Object.keys(scenario.quests || {}).length} Aufgaben · {allStepEntries().length} Adventure-Aufgaben</strong><span>Datenumfang</span></div>
     </div>
   )
 }

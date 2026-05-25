@@ -1,3 +1,3 @@
 export { QuestSurface } from "./QuestSurface"
-export { ProfilePanel } from "./ProfilePanel"
+export { ProfilePage, RightRail } from "./ProfilePanel"
 export { WorldState, ModelInfo } from "./DebugPanels"

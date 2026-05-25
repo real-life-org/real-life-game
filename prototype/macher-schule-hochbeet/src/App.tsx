@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import * as domain from "./domain"
 import type { Model } from "./domain"
-import { QuestSurface, ProfilePanel, WorldState, ModelInfo } from "./components"
+import { QuestSurface, ProfilePage, RightRail, WorldState, ModelInfo } from "./components"
 import { UserAvatar } from "./ui/primitives"
 
 const {
@@ -18,8 +18,7 @@ const {
   isStudent,
   canConfirm,
   slug,
-  formatScheduleDate,
-  formatScheduleTime,
+  formatScheduleLabel,
   getQuest,
   getStep,
   getQuestForStep,
@@ -35,6 +34,7 @@ const {
   runWindowStarted,
   runCanStillBeAccepted,
   findRun,
+  findRunInAdventureRun,
   participationPolicyForStep,
   participationPolicyForStandalone,
   runHasParticipantSlot,
@@ -92,6 +92,11 @@ export function App() {
     if (!MAIN_TABS.some((tab) => tab.id === tabId)) return
     commit((draft) => {
       draft.selectedTab = tabId
+      draft.selectedView = "overview"
+      draft.selectedAdventureId = null
+      draft.selectedAdventureRunId = null
+      draft.selectedStandaloneQuestKey = null
+      draft.selectedStepId = null
     })
   }
 
@@ -120,16 +125,29 @@ export function App() {
     commit((draft) => {
       draft.selectedTab = "quests"
       draft.selectedView = "overview"
+      draft.selectedAdventureId = null
+      draft.selectedAdventureRunId = null
       draft.selectedStepId = null
       draft.selectedStandaloneQuestKey = null
     })
   }
 
-  function selectAdventure(runId: string | null = state.selectedAdventureRunId || null) {
+  function showProfile() {
+    commit((draft) => {
+      draft.selectedView = "profile"
+      draft.selectedStepId = null
+      draft.selectedStandaloneQuestKey = null
+      draft.selectedAdventureId = null
+      draft.selectedAdventureRunId = null
+    })
+  }
+
+  function selectAdventure(runId: string | null = state.selectedAdventureRunId || null, adventureId: string | null = null) {
     commit((draft) => {
       draft.selectedTab = "quests"
       draft.selectedView = "adventure"
       draft.selectedAdventureRunId = runId
+      draft.selectedAdventureId = adventureId
       draft.selectedStandaloneQuestKey = null
       draft.selectedStepId = null
     })
@@ -178,20 +196,26 @@ export function App() {
     updateRecurrenceRule(questKey, { until: until || null })
   }
 
-  function acceptStep(actorId: string, stepId: string) {
+  function acceptStep(actorId: string, stepId: string, adventureRunId: string | null = state.selectedAdventureRunId || null) {
     commit((draft) => {
       const step = getStep(stepId)
-      let activeAdventureRun = adventureRun(draft)
+      let activeAdventureRun = adventureRun(draft, adventureRunId)
+      if (activeAdventureRun && step && activeAdventureRun.adventureId !== step.from) {
+        activeAdventureRun = null
+      }
+      const existingRun = activeAdventureRun
+        ? findRunInAdventureRun(draft, actorId, stepId, activeAdventureRun.id)
+        : findRun(draft, actorId, stepId)
       const joinableRun = activeAdventureRun ? joinableRunForStep(draft, actorId, step, activeAdventureRun.id) : null
       if (
         !step ||
         !isStudent(actorId) ||
-        findRun(draft, actorId, stepId) ||
+        existingRun ||
         (activeAdventureRun && !joinableRun && capacityReached(draft, step, activeAdventureRun.id))
       ) return
 
       if (!activeAdventureRun) {
-        activeAdventureRun = createAdventureRun(draft, actorId)
+        activeAdventureRun = createAdventureRun(draft, actorId, step.from)
       }
 
       const quest = getQuestForStep(step)
@@ -293,7 +317,7 @@ export function App() {
       addRunParticipant(run, actorId)
       run.status = "accepted"
       if (!canUseSelectedRun || selectedOpenRun?.virtual) draft.runs.push(run)
-      addEvent(draft, `${personName(actorId)} hat die Aufgabe "${quest.title}"${run.startsAt ? ` für ${formatScheduleDate(run)} ${formatScheduleTime(run)}` : ""} übernommen.`, {
+      addEvent(draft, `${personName(actorId)} hat die Aufgabe "${quest.title}"${run.startsAt || run.date ? ` für ${formatScheduleLabel(run)}` : ""} übernommen.`, {
         scopes: ["global", "questRun"],
         questRunId: run.id,
         personId: actorId
@@ -440,6 +464,7 @@ export function App() {
   }
 
   const role = scenario.roles[state.selectedRole]
+  const isProfileView = state.selectedView === "profile"
 
   return (
     <main className="app-shell">
@@ -473,7 +498,7 @@ export function App() {
         <nav className="navbar-tabs" aria-label="Hauptnavigation">
           {MAIN_TABS.map((tab) => (
             <button
-              className={`tab-button ${state.selectedTab === tab.id ? "is-active" : ""}`}
+              className={`tab-button ${!isProfileView && state.selectedTab === tab.id ? "is-active" : ""}`}
               type="button"
               key={tab.id}
               onClick={() => setMainTab(tab.id)}
@@ -484,13 +509,20 @@ export function App() {
         </nav>
 
         <div className="navbar-end">
-          <details className="user-menu">
-            <summary className="user-menu-trigger" aria-label="User wechseln">
-              <UserAvatar personId={state.selectedRole} className="user-menu-avatar" />
-              <span className="user-menu-copy">
-                <span className="user-menu-name">{role.name}</span>
-                <span className="user-menu-role">{role.perspective}</span>
-              </span>
+          <button
+            className={`user-profile-trigger ${isProfileView ? "is-active" : ""}`}
+            type="button"
+            onClick={showProfile}
+            aria-label="Profil öffnen"
+          >
+            <UserAvatar personId={state.selectedRole} className="user-menu-avatar" />
+            <span className="user-menu-copy">
+              <span className="user-menu-name">{role.name}</span>
+              <span className="user-menu-role">{role.perspective}</span>
+            </span>
+          </button>
+          <details className="user-menu user-switch-menu">
+            <summary className="user-switch-trigger" aria-label="User wechseln">
               <span className="user-menu-caret" aria-hidden="true">v</span>
             </summary>
             <div className="user-menu-panel">
@@ -517,36 +549,50 @@ export function App() {
       </header>
 
       <div className="app-content">
-        <section className="app-layout">
+        <section className={`app-layout ${isProfileView ? "profile-page-layout" : ""}`}>
           <section className="workspace-column">
             <div className="surface-heading">
               <button className="surface-title-button" type="button" onClick={showQuestOverview}>
-                {state.selectedView === "overview" ? "" : "← "}Aufgabenübersicht
+                {isProfileView ? "← Zurück zur Aufgabenübersicht" : `${state.selectedView === "overview" ? "" : "← "}Aufgabenübersicht`}
               </button>
             </div>
             <section className="quest-column">
               <section className="quest-panel">
-                <QuestSurface
-                  state={state}
-                  selectAdventure={selectAdventure}
-                  selectAdventureStep={selectAdventureStep}
-                  selectStandaloneQuest={selectStandaloneQuest}
-                  acceptStep={acceptStep}
-                  completeStep={completeStep}
-                  acceptStandaloneQuest={acceptStandaloneQuest}
-                  completeStandaloneQuest={completeStandaloneQuest}
-                  postRunPhoto={postRunPhoto}
-                  postFramePhoto={postFramePhoto}
-                  confirmRun={confirmRun}
-                  setRecurrenceWeekday={setRecurrenceWeekday}
-                  setRecurrenceUntil={setRecurrenceUntil}
-                />
+                {isProfileView ? (
+                  <ProfilePage
+                    state={state}
+                    selectAdventure={selectAdventure}
+                    selectStandaloneQuest={selectStandaloneQuest}
+                  />
+                ) : (
+                  <QuestSurface
+                    state={state}
+                    setMainTab={setMainTab}
+                    selectAdventure={selectAdventure}
+                    selectAdventureStep={selectAdventureStep}
+                    selectStandaloneQuest={selectStandaloneQuest}
+                    acceptStep={acceptStep}
+                    completeStep={completeStep}
+                    acceptStandaloneQuest={acceptStandaloneQuest}
+                    completeStandaloneQuest={completeStandaloneQuest}
+                    postRunPhoto={postRunPhoto}
+                    postFramePhoto={postFramePhoto}
+                    confirmRun={confirmRun}
+                    setRecurrenceWeekday={setRecurrenceWeekday}
+                    setRecurrenceUntil={setRecurrenceUntil}
+                  />
+                )}
               </section>
             </section>
           </section>
 
-          <aside className="profile-panel" aria-label="Profil">
-            <ProfilePanel state={state} selectAdventure={selectAdventure} selectStandaloneQuest={selectStandaloneQuest} />
+          <aside className="side-panel" aria-label="Kontext">
+            <RightRail
+              state={state}
+              setMainTab={setMainTab}
+              selectAdventure={selectAdventure}
+              selectStandaloneQuest={selectStandaloneQuest}
+            />
           </aside>
         </section>
 

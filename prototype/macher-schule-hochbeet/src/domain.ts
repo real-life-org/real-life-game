@@ -119,7 +119,9 @@ export function normalizeState(value: any) {
   const selectedTab = MAIN_TABS.some((tab) => tab.id === value.selectedTab)
     ? value.selectedTab
     : fallback.selectedTab || "quests"
-  const selectedView = value.selectedView === "adventure" || value.selectedView === "step"
+  const selectedView = value.selectedView === "profile"
+    ? "profile"
+    : value.selectedView === "adventure" || value.selectedView === "step"
     ? "adventure"
     : value.selectedView === "standalone"
       ? "standalone"
@@ -147,6 +149,7 @@ export function normalizeState(value: any) {
     selectedTab,
     selectedView,
     selectedStepId: typeof value.selectedStepId === "string" ? value.selectedStepId : null,
+    selectedAdventureId: typeof value.selectedAdventureId === "string" ? value.selectedAdventureId : null,
     selectedStandaloneQuestKey: typeof value.selectedStandaloneQuestKey === "string" ? value.selectedStandaloneQuestKey : null,
     selectedAdventureRunId: typeof value.selectedAdventureRunId === "string" ? value.selectedAdventureRunId : null,
     selectedRole: scenario.roles[value.selectedRole] ? value.selectedRole : fallback.selectedRole
@@ -271,6 +274,13 @@ export function localDateFromKey(value: string) {
   return new Date(year, month - 1, day, 23, 59, 59, 999)
 }
 
+export function localDateStartFromKey(value: string) {
+  const [year, month, day] = String(value || "").split("-").map(Number)
+  if (!year || !month || !day) return null
+
+  return new Date(year, month - 1, day, 0, 0, 0, 0)
+}
+
 export function weekdayNumber(date: Date) {
   return date.getDay() || 7
 }
@@ -315,6 +325,10 @@ export function relativeTime(value: any) {
 }
 
 export function scheduleTimestamp(schedule: any) {
+  if (schedule?.date && !schedule?.startsAt) {
+    return localDateStartFromKey(schedule.date)?.getTime() || 0
+  }
+
   const value = schedule?.startsAt || schedule?.date
   const timestamp = Date.parse(value)
   return Number.isFinite(timestamp) ? timestamp : 0
@@ -332,6 +346,8 @@ export function formatScheduleDate(schedule: any) {
 }
 
 export function formatScheduleTime(schedule: any) {
+  if (schedule?.date && !schedule?.startsAt) return "ganztägig"
+
   const start = scheduleTimestamp(schedule)
   if (!start) return "zeitlich offen"
 
@@ -344,6 +360,15 @@ export function formatScheduleTime(schedule: any) {
   if (!Number.isFinite(end)) return startText
 
   return `${startText}-${timeFormatter.format(new Date(end))}`
+}
+
+export function formatScheduleLabel(schedule: any) {
+  if (!schedule) return "jederzeit"
+
+  const date = formatScheduleDate(schedule)
+  if (schedule.date && !schedule.startsAt) return date
+
+  return `${date} · ${formatScheduleTime(schedule)}`
 }
 
 export function scheduleDateKey(schedule: any) {
@@ -362,9 +387,30 @@ export function standaloneQuestEntries() {
     .sort(([, a]: any, [, b]: any) => (a.order || 0) - (b.order || 0))
 }
 
-export function stepEntries() {
+export function adventureEntries() {
+  const ids = scenario.campaign?.adventureIds || [scenario.campaign?.primaryAdventureId || scenario.adventure?.id]
+  return ids
+    .map((adventureId: string) => [adventureId, getAdventure(adventureId)])
+    .filter(([, adventure]: any) => Boolean(adventure))
+}
+
+export function getAdventure(adventureId: string) {
+  return scenario.adventures?.[adventureId] || (scenario.adventure?.id === adventureId ? scenario.adventure : null)
+}
+
+export function stepEntries(adventureId = scenario.adventure?.id) {
   return Object.entries(scenario.adventureQuestRelations || {})
+    .filter(([, item]: any) => !adventureId || item.from === adventureId)
     .sort(([, a]: any, [, b]: any) => (a.meta.order || 0) - (b.meta.order || 0))
+}
+
+export function allStepEntries() {
+  return Object.entries(scenario.adventureQuestRelations || {})
+    .sort(([, a]: any, [, b]: any) => {
+      const adventureOrder = adventureEntries().findIndex(([adventureId]) => adventureId === a.from) -
+        adventureEntries().findIndex(([adventureId]) => adventureId === b.from)
+      return adventureOrder || (a.meta.order || 0) - (b.meta.order || 0)
+    })
 }
 
 export function getStep(stepId: string) {
@@ -385,17 +431,43 @@ export function getLocation(locationId: string) {
 }
 
 export function stepLocation(step: any) {
-  return getLocation(step?.meta?.locationId || scenario.adventure?.locationId || scenario.campaign?.locationId)
+  const adventure = getAdventure(step?.from) || scenario.adventure
+  return getLocation(step?.meta?.locationId || adventure?.locationId || scenario.campaign?.locationId)
 }
 
 export function standaloneLocation(questKey: string) {
   const offer = getStandaloneOffer(questKey)
   const quest = getQuest(questKey)
+  if (offer?.locationScope === "anywhere" || quest?.locationScope === "anywhere") return null
   return getLocation(offer?.locationId || quest?.locationId || scenario.campaign?.locationId)
 }
 
 export function stepSchedule(step: any) {
-  return step?.meta?.schedule || scenario.adventure?.schedule || null
+  const adventure = getAdventure(step?.from) || scenario.adventure
+  return step?.meta?.schedule || adventure?.schedule || null
+}
+
+export function adventureRunsForAdventure(model: Model, adventureId: string) {
+  return adventureRuns(model).filter((run: any) => (run.adventureId || scenario.adventure?.id) === adventureId)
+}
+
+export function adventureLocation(adventureId: string) {
+  const adventure = getAdventure(adventureId)
+  return getLocation(adventure?.locationId || scenario.campaign?.locationId)
+}
+
+export function adventureSchedule(adventureId: string) {
+  const adventure = getAdventure(adventureId)
+  return adventure?.schedule || stepEntries(adventureId).map(([, step]: any) => stepSchedule(step)).find(Boolean) || null
+}
+
+export function adventurePlaceTimeLabel(adventureId: string) {
+  const location = adventureLocation(adventureId)
+  const schedule = adventureSchedule(adventureId)
+  return [
+    location?.label || "ortsunabhängig",
+    formatScheduleLabel(schedule)
+  ].join(" · ")
 }
 
 export function standaloneSchedule(questKey: string) {
@@ -487,7 +559,7 @@ export function getRun(model: Model, runId: string) {
 
 export function runSchedule(run: any) {
   if (!run) return null
-  if (run.startsAt || run.endsAt) return run
+  if (run.startsAt || run.endsAt || run.date) return run
 
   const step = run.adventureStepRelationId ? getStep(run.adventureStepRelationId) : null
   return stepSchedule(step)
@@ -495,12 +567,18 @@ export function runSchedule(run: any) {
 
 export function runStartTimestamp(run: any) {
   const schedule = runSchedule(run)
-  return timestampValue(schedule?.startsAt || schedule?.date)
+  return scheduleTimestamp(schedule)
 }
 
 export function runEndTimestamp(run: any) {
   const schedule = runSchedule(run)
-  return timestampValue(schedule?.endsAt)
+  const explicitEnd = timestampValue(schedule?.endsAt)
+  if (explicitEnd) return explicitEnd
+  if (schedule?.date && !schedule?.startsAt) {
+    return localDateFromKey(schedule.date)?.getTime() || null
+  }
+
+  return null
 }
 
 export function runWindowStarted(run: any) {
@@ -520,7 +598,7 @@ export function runStartHint(run: any) {
   const schedule = runSchedule(run)
   if (!runStartTimestamp(run)) return ""
 
-  return `Ab ${formatScheduleDate(schedule)} · ${formatScheduleTime(schedule)} möglich.`
+  return `Ab ${formatScheduleLabel(schedule)} möglich.`
 }
 
 export function isActiveRun(run: any) {
@@ -645,11 +723,11 @@ export function virtualStandaloneRunsForQuest(model: Model, questKey: string, ma
   const quest = getQuest(questKey)
   const offer = getStandaloneOffer(questKey)
   const schedule = standaloneSchedule(questKey)
-  if (!quest || offer?.runPolicy?.type !== "scheduled" || !schedule?.startsAt) return []
+  if (!quest || offer?.runPolicy?.type !== "scheduled" || !(schedule?.startsAt || schedule?.date)) return []
 
   const existingIds = new Set(materializedRuns.map((run: any) => run.id))
   const start = new Date(scheduleTimestamp(schedule))
-  const endTimestamp = Date.parse(schedule.endsAt)
+  const endTimestamp = schedule.startsAt ? Date.parse(schedule.endsAt) : NaN
   const duration = Number.isFinite(endTimestamp) ? Math.max(0, endTimestamp - start.getTime()) : null
   const rule = recurrenceRuleForQuest(model, questKey)
   const selectedWeekdays = new Set(rule.weekdays)
@@ -679,7 +757,8 @@ export function virtualStandaloneRunsForQuest(model: Model, questKey: string, ma
       periodKey,
       status: "open",
       locationId: offer?.locationId || quest.locationId || null,
-      startsAt: occurrenceStart.toISOString(),
+      date: schedule.startsAt ? null : periodKey,
+      startsAt: schedule.startsAt ? occurrenceStart.toISOString() : null,
       endsAt: duration === null ? null : new Date(occurrenceStart.getTime() + duration).toISOString(),
       virtual: true,
       completion: null
@@ -821,7 +900,8 @@ export function badgesForPerson(model: Model, personId: string) {
     })
 
   completedAdventureRunsForPerson(model, personId).forEach((run: any) => {
-    const key = scenario.adventure.id
+    const adventure = getAdventure(run.adventureId) || scenario.adventure
+    const key = adventure.id
     const confirmation = confirmationForRun(model, run.id)
     const existing = badges.get(key)
     if (existing) {
@@ -832,8 +912,8 @@ export function badgesForPerson(model: Model, personId: string) {
 
     badges.set(key, {
       questKey: key,
-      title: scenario.adventure.resultBadgeTitle || scenario.adventure.title,
-      image: scenario.adventure.image,
+      title: adventure.resultBadgeTitle || adventure.title,
+      image: adventure.image,
       count: 1,
       sourceConfirmations: confirmation ? [confirmation] : []
     })
@@ -851,10 +931,12 @@ export function stepStatus(model: Model, stepId: string, runId = model.selectedA
 }
 
 export function standaloneQuestStatus(model: Model, questKey: string) {
+  const offer = getStandaloneOffer(questKey)
   const runs = runsForStandaloneQuest(model, questKey)
   if (runs.some((run: any) => run.status === "accepted")) return "accepted"
   if (runs.some((run: any) => run.status === "open")) return "suggested"
   if (runs.some((run: any) => run.status === "completed")) return "completed"
+  if (offer?.repeatable) return "suggested"
   if (runs.length && runs.every((run: any) => run.status === "confirmed")) return "confirmed"
   return "suggested"
 }
@@ -869,6 +951,7 @@ export function isStandaloneQuestHistory(model: Model, questKey: string) {
 export function standaloneOfferLabel(model: Model, offer: any, questKey = offer?.questKey) {
   if (offer?.runPolicy?.type === "scheduled") return weekdayRangeLabel(recurrenceRuleForQuest(model, questKey).weekdays)
   if (offer?.repeatable && offer.cadence === "daily") return "Täglich"
+  if (offer?.repeatable) return "Jederzeit"
   return "Einmalig"
 }
 
@@ -919,19 +1002,20 @@ export function dependencyText(model: Model, stepId: string, runId = model.selec
   return `Wartet auf fertige Aufgabe: ${dependencyTitles.join(", ")}.`
 }
 
-export function requiredSteps() {
-  return stepEntries().filter(([, step]: any) => step.meta.required)
+export function requiredSteps(adventureId = scenario.adventure?.id) {
+  return stepEntries(adventureId).filter(([, step]: any) => step.meta.required)
 }
 
 export function confirmedRequiredSteps(model: Model, runId: string) {
-  return requiredSteps().filter(([, step]: any) => (
+  const run = adventureRun(model, runId)
+  return requiredSteps(run?.adventureId || scenario.adventure?.id).filter(([, step]: any) => (
     runsForStep(model, step.id, runId).some((run: any) => run.status === "confirmed")
   ))
 }
 
 export function syncAdventureCompletion(model: Model) {
   adventureRuns(model).forEach((run: any) => {
-    const required = requiredSteps()
+    const required = requiredSteps(run.adventureId || scenario.adventure?.id)
     if (!required.length) return
 
     const completed = confirmedRequiredSteps(model, run.id)
@@ -983,17 +1067,19 @@ export function addEvent(model: Model, text: string, options: any = {}) {
   })
 }
 
-export function nextAdventureRunTitle(model: Model) {
-  const prefix = scenario.adventure.runTitlePrefix || "Adventure-Gruppe"
-  const suffix = String.fromCharCode(65 + adventureRuns(model).length)
+export function nextAdventureRunTitle(model: Model, adventureId = scenario.adventure?.id) {
+  const adventure = getAdventure(adventureId) || scenario.adventure
+  const prefix = adventure.runTitlePrefix || "Adventure"
+  const suffix = String.fromCharCode(65 + adventureRunsForAdventure(model, adventure.id).length)
   return `${prefix} ${suffix}`
 }
 
-export function createAdventureRun(model: Model, actorId: string) {
-  const title = nextAdventureRunTitle(model)
+export function createAdventureRun(model: Model, actorId: string, adventureId = scenario.adventure?.id) {
+  const adventure = getAdventure(adventureId) || scenario.adventure
+  const title = nextAdventureRunTitle(model, adventure.id)
   const run = {
-    id: `adventure-run:${slug(scenario.adventure.id)}-${slug(title)}`,
-    adventureId: scenario.adventure.id,
+    id: `adventure-run:${slug(adventure.id)}-${slug(title)}`,
+    adventureId: adventure.id,
     title,
     participantIds: isStudent(actorId) ? [actorId] : [],
     status: "active",
@@ -1001,6 +1087,7 @@ export function createAdventureRun(model: Model, actorId: string) {
   }
 
   model.adventureRuns.push(run)
+  model.selectedAdventureId = adventure.id
   model.selectedAdventureRunId = run.id
   addEvent(model, `${personName(actorId)} hat das Adventure ${title} gestartet.`, {
     scopes: ["global", "adventure"],
@@ -1032,6 +1119,7 @@ export function createStandaloneRun(model: Model, actorId: string, questKey: str
     periodKey,
     status: "accepted",
     locationId: offer?.locationId || quest.locationId || null,
+    date: offer?.schedule?.date || quest.schedule?.date || periodKey || null,
     startsAt: offer?.schedule?.startsAt || quest.schedule?.startsAt || null,
     endsAt: offer?.schedule?.endsAt || quest.schedule?.endsAt || null,
     createdAt: Date.now(),
@@ -1048,7 +1136,7 @@ export function materializeStandaloneRun(run: any) {
 export function questRunTimestamp(run: any) {
   return timestampValue(run.confirmedAt) ||
     timestampValue(run.completedAt) ||
-    timestampValue(run.startsAt) ||
+    runStartTimestamp(run) ||
     timestampValue(run.createdAt) ||
     0
 }
@@ -1071,9 +1159,19 @@ export function runTitle(run: any) {
   return getQuest(run.questKey).title
 }
 
+export function adventureRunTitle(run: any) {
+  return String(run?.title || "Adventure")
+    .replace(/-Gruppe\b/g, "")
+    .replace(/-Team\b/g, "")
+    .replace(/\bGruppe\s+/g, "")
+    .replace(/\bTeam\s+/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 export function runSubtitle(model: Model, run: any) {
-  if (run.adventureRunId) return adventureRun(model, run.adventureRunId)?.title || "Adventure"
-  if (run.startsAt) return `${formatScheduleDate(run)} · ${formatScheduleTime(run)}`
+  if (run.adventureRunId) return adventureRunTitle(adventureRun(model, run.adventureRunId)) || "Adventure"
+  if (run.startsAt || run.date) return formatScheduleLabel(run)
   return "Einzelaufgabe"
 }
 
@@ -1082,14 +1180,14 @@ export function stepPlaceTimeLabel(step: any) {
   const schedule = stepSchedule(step)
   return [
     location?.label || "ortsunabhängig",
-    schedule ? `${formatScheduleDate(schedule)} · ${formatScheduleTime(schedule)}` : "jederzeit"
+    formatScheduleLabel(schedule)
   ].join(" · ")
 }
 
 export function standaloneRunPlaceTimeLabel(run: any, questKey: string) {
   const schedule = run || standaloneSchedule(questKey)
   const location = getLocation(run?.locationId) || standaloneLocation(questKey)
-  const time = schedule?.startsAt ? formatScheduleTime(schedule) : "jederzeit"
+  const time = schedule?.startsAt || schedule?.date ? formatScheduleLabel(schedule) : "jederzeit"
 
   return [
     location?.label || "ortsunabhängig",
@@ -1104,7 +1202,7 @@ export function activeActionRun(model: Model, personId: string) {
 export function scheduleItems(model: Model) {
   const items: any[] = []
 
-  stepEntries().forEach(([, step]: any) => {
+  allStepEntries().forEach(([, step]: any) => {
     const schedule = stepSchedule(step)
     const location = stepLocation(step)
     if (!schedule && !location) return
@@ -1112,11 +1210,11 @@ export function scheduleItems(model: Model) {
       id: `schedule:step:${step.id}`,
       type: "adventure-step",
       title: getQuestForStep(step).title,
-      parentTitle: scenario.adventure.title,
+      parentTitle: getAdventure(step.from)?.title || scenario.adventure.title,
       schedule,
       location,
       status: stepStatus(model, step.id),
-      action: { kind: "adventure", runId: model.selectedAdventureRunId || null, stepId: step.id }
+      action: { kind: "adventure", adventureId: step.from, runId: model.selectedAdventureRunId || null, stepId: step.id }
     })
   })
 
@@ -1171,15 +1269,15 @@ export function dominantStatus(statuses: string[]) {
   return "suggested"
 }
 
-export function developmentFieldsForAdventure() {
+export function developmentFieldsForAdventure(adventureId = scenario.adventure?.id) {
   const set = new Set<string>()
-  stepEntries().forEach(([, step]: any) => {
+  stepEntries(adventureId).forEach(([, step]: any) => {
     developmentFieldsForStep(step).forEach((field: string) => set.add(field))
   })
   return Array.from(set)
 }
 
 export function freeStepCount(model: Model, runId: string) {
-  return stepEntries().filter(([, step]: any) => stepHasParticipantSlot(model, step, runId)).length
+  const run = adventureRun(model, runId)
+  return stepEntries(run?.adventureId || scenario.adventure?.id).filter(([, step]: any) => stepHasParticipantSlot(model, step, runId)).length
 }
-

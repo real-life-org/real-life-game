@@ -127,7 +127,12 @@ const DEFAULT_SIMULATION_BUNDLE = {
       playerRoleIds: ["student"],
       confirmerRoleIds: ["mentor"],
       primaryAdventureId: "adventure:schoolyard-raised-bed",
-      standaloneQuestOfferKeys: ["carrots", "watering"],
+      adventureIds: [
+        "adventure:schoolyard-raised-bed",
+        "adventure:insect-hotel",
+        "adventure:reading-club"
+      ],
+      standaloneQuestOfferKeys: ["carrots", "watering", "helping"],
       locationId: "location:schoolyard-garden",
       worldState: {
         primaryMetricKey: "raisedBedsBuilt",
@@ -165,16 +170,58 @@ const DEFAULT_SIMULATION_BUNDLE = {
       lat: 52.51791,
       lng: 13.37655,
       map: { x: 66, y: 31 }
+    },
+    "location:wildflower-corner": {
+      id: "location:wildflower-corner",
+      label: "Wildblumen-Ecke",
+      address: "Macher-Schule, Schulhof Nord",
+      lat: 52.51834,
+      lng: 13.37628,
+      map: { x: 55, y: 22 }
+    },
+    "location:library-corner": {
+      id: "location:library-corner",
+      label: "Leseecke",
+      address: "Macher-Schule, Bibliothek",
+      lat: 52.51784,
+      lng: 13.37592,
+      map: { x: 34, y: 28 }
     }
   },
   adventures: {
     "adventure:schoolyard-raised-bed": {
       id: "adventure:schoolyard-raised-bed",
       title: "Schulhof-Hochbeet bauen",
-      runTitlePrefix: "Hochbeet-Gruppe",
+      runTitlePrefix: "Hochbeet",
       resultBadgeTitle: "Schulhof-Hochbeet gebaut",
       image: "img/gardener-work-svgrepo-com.svg",
-      locationId: "location:schoolyard-garden"
+      locationId: "location:schoolyard-garden",
+      schedule: {
+        date: "2026-05-20"
+      }
+    },
+    "adventure:insect-hotel": {
+      id: "adventure:insect-hotel",
+      title: "Insektenhotel bauen",
+      runTitlePrefix: "Insektenhotel",
+      resultBadgeTitle: "Insektenhotel gebaut",
+      image: "img/saw-svgrepo-com.svg",
+      locationId: "location:wildflower-corner",
+      schedule: {
+        date: "2026-05-21"
+      }
+    },
+    "adventure:reading-club": {
+      id: "adventure:reading-club",
+      title: "Leseclub",
+      runTitlePrefix: "Leseclub",
+      resultBadgeTitle: "Leseclub gestaltet",
+      image: "img/photo-camera-svgrepo-com.svg",
+      locationId: "location:library-corner",
+      schedule: {
+        startsAt: "2026-05-22T09:30:00+02:00",
+        endsAt: "2026-05-22T10:15:00+02:00"
+      }
     }
   },
   quests: {
@@ -256,6 +303,111 @@ const DEFAULT_SIMULATION_BUNDLE = {
       confirmationPolicy: {
         required: true
       }
+    },
+    helping: {
+      id: "quest:help-someone",
+      title: "Jemandem helfen",
+      image: "img/avatar-boy-kid-svgrepo-com.svg",
+      developmentFields: ["Teamarbeit", "Verantwortung"],
+      completionClaim: "Ich habe jemandem geholfen.",
+      confirmationClaim: "{actor} hat jemandem geholfen.",
+      evidencePolicy: {
+        required: false,
+        acceptedTypes: ["photo", "video", "text"]
+      },
+      confirmationPolicy: {
+        required: true
+      }
+    },
+    insect_material: {
+      id: "quest:insect-hotel-material",
+      title: "Material vorbereiten",
+      image: "img/saw-svgrepo-com.svg",
+      developmentFields: ["Holzarbeit", "Sorgfalt"],
+      completionClaim: "Ich habe Material für das Insektenhotel vorbereitet.",
+      confirmationClaim: "{actor} hat Material für das Insektenhotel vorbereitet.",
+      evidencePolicy: {
+        required: false,
+        acceptedTypes: ["photo", "video", "text"]
+      },
+      confirmationPolicy: {
+        required: true
+      }
+    },
+    insect_build: {
+      id: "quest:insect-hotel-build",
+      title: "Insektenhotel zusammensetzen",
+      image: "img/builder-helmet-worker-svgrepo-com.svg",
+      developmentFields: ["Holzarbeit", "Werkzeugnutzung", "Teamarbeit"],
+      completionClaim: "Ich habe am Insektenhotel mitgebaut.",
+      confirmationClaim: "{actor} hat am Insektenhotel mitgebaut.",
+      evidencePolicy: {
+        required: false,
+        acceptedTypes: ["photo", "video", "text"]
+      },
+      confirmationPolicy: {
+        required: true
+      }
+    },
+    insect_place: {
+      id: "quest:insect-hotel-place",
+      title: "Insektenhotel aufstellen",
+      image: "img/gardener-work-svgrepo-com.svg",
+      developmentFields: ["Garten", "Teamarbeit"],
+      completionClaim: "Ich habe das Insektenhotel aufgestellt.",
+      confirmationClaim: "{actor} hat das Insektenhotel aufgestellt.",
+      evidencePolicy: {
+        required: false,
+        acceptedTypes: ["photo", "video", "text"]
+      },
+      confirmationPolicy: {
+        required: true
+      }
+    },
+    reading_pick: {
+      id: "quest:reading-club-pick-book",
+      title: "Buch auswählen",
+      image: "img/photo-camera-svgrepo-com.svg",
+      developmentFields: ["Sorgfalt", "Teamarbeit"],
+      completionClaim: "Ich habe ein Buch für den Leseclub ausgewählt.",
+      confirmationClaim: "{actor} hat ein Buch für den Leseclub ausgewählt.",
+      evidencePolicy: {
+        required: false,
+        acceptedTypes: ["photo", "video", "text"]
+      },
+      confirmationPolicy: {
+        required: true
+      }
+    },
+    reading_moderate: {
+      id: "quest:reading-club-moderate",
+      title: "Leserunde moderieren",
+      image: "img/avatar-elderly-grandma-svgrepo-com.svg",
+      developmentFields: ["Teamarbeit", "Verantwortung"],
+      completionClaim: "Ich habe eine Leserunde moderiert.",
+      confirmationClaim: "{actor} hat eine Leserunde moderiert.",
+      evidencePolicy: {
+        required: false,
+        acceptedTypes: ["photo", "video", "text"]
+      },
+      confirmationPolicy: {
+        required: true
+      }
+    },
+    reading_share: {
+      id: "quest:reading-club-share",
+      title: "Lieblingsstelle vorstellen",
+      image: "img/avatar-boy-kid-svgrepo-com.svg",
+      developmentFields: ["Teamarbeit", "Sorgfalt"],
+      completionClaim: "Ich habe eine Lieblingsstelle vorgestellt.",
+      confirmationClaim: "{actor} hat eine Lieblingsstelle vorgestellt.",
+      evidencePolicy: {
+        required: false,
+        acceptedTypes: ["photo", "video", "text"]
+      },
+      confirmationPolicy: {
+        required: true
+      }
     }
   },
   standaloneQuestOffers: {
@@ -291,9 +443,17 @@ const DEFAULT_SIMULATION_BUNDLE = {
       },
       locationId: "location:schoolyard-garden",
       schedule: {
-        startsAt: "2026-05-20T08:30:00+02:00",
-        endsAt: "2026-05-20T08:50:00+02:00"
+        date: "2026-05-20"
       }
+    },
+    helping: {
+      questKey: "helping",
+      order: 3,
+      repeatable: true,
+      runPolicy: {
+        type: "on-demand"
+      },
+      locationScope: "anywhere"
     }
   },
   adventureQuestRelations: {
@@ -310,11 +470,7 @@ const DEFAULT_SIMULATION_BUNDLE = {
         roleId: "builder",
         capacity: 1,
         developmentFields: ["Holzarbeit", "Werkzeugnutzung", "Teamarbeit"],
-        locationId: "location:tool-shed",
-        schedule: {
-          startsAt: "2026-05-20T10:00:00+02:00",
-          endsAt: "2026-05-20T10:45:00+02:00"
-        }
+        locationId: "location:tool-shed"
       }
     },
     documentation: {
@@ -330,11 +486,7 @@ const DEFAULT_SIMULATION_BUNDLE = {
         roleId: "documenter",
         capacity: 1,
         developmentFields: ["Dokumentation", "Teamarbeit"],
-        locationId: "location:classroom-window",
-        schedule: {
-          startsAt: "2026-05-20T10:15:00+02:00",
-          endsAt: "2026-05-20T11:30:00+02:00"
-        }
+        locationId: "location:classroom-window"
       }
     },
     soil: {
@@ -355,10 +507,119 @@ const DEFAULT_SIMULATION_BUNDLE = {
         },
         dependsOn: ["rel:schoolyard-raised-bed-frame-build"],
         developmentFields: ["Garten", "Teamarbeit"],
-        locationId: "location:schoolyard-garden",
+        locationId: "location:schoolyard-garden"
+      }
+    },
+    insect_material: {
+      id: "rel:insect-hotel-material",
+      from: "adventure:insect-hotel",
+      predicate: "containsQuest",
+      target: "quest:insect-hotel-material",
+      questKey: "insect_material",
+      meta: {
+        required: true,
+        phase: "vorbereitung",
+        order: 1,
+        roleId: "builder",
+        capacity: 1,
+        developmentFields: ["Holzarbeit", "Sorgfalt"],
+        locationId: "location:tool-shed"
+      }
+    },
+    insect_build: {
+      id: "rel:insect-hotel-build",
+      from: "adventure:insect-hotel",
+      predicate: "containsQuest",
+      target: "quest:insect-hotel-build",
+      questKey: "insect_build",
+      meta: {
+        required: true,
+        phase: "bau",
+        order: 2,
+        roleId: "builder",
+        capacity: 1,
+        participationPolicy: {
+          minParticipants: 2,
+          maxParticipants: 3
+        },
+        developmentFields: ["Holzarbeit", "Werkzeugnutzung", "Teamarbeit"],
+        locationId: "location:wildflower-corner"
+      }
+    },
+    insect_place: {
+      id: "rel:insect-hotel-place",
+      from: "adventure:insect-hotel",
+      predicate: "containsQuest",
+      target: "quest:insect-hotel-place",
+      questKey: "insect_place",
+      meta: {
+        required: true,
+        phase: "aufstellen",
+        order: 3,
+        roleId: "gardener",
+        capacity: 1,
+        dependsOn: ["rel:insect-hotel-build"],
+        developmentFields: ["Garten", "Teamarbeit"],
+        locationId: "location:wildflower-corner"
+      }
+    },
+    reading_pick: {
+      id: "rel:reading-club-pick-book",
+      from: "adventure:reading-club",
+      predicate: "containsQuest",
+      target: "quest:reading-club-pick-book",
+      questKey: "reading_pick",
+      meta: {
+        required: true,
+        phase: "vorbereitung",
+        order: 1,
+        roleId: "documenter",
+        capacity: 1,
+        developmentFields: ["Sorgfalt", "Teamarbeit"],
+        locationId: "location:library-corner",
         schedule: {
-          startsAt: "2026-05-20T11:00:00+02:00",
-          endsAt: "2026-05-20T11:45:00+02:00"
+          startsAt: "2026-05-22T09:30:00+02:00",
+          endsAt: "2026-05-22T09:40:00+02:00"
+        }
+      }
+    },
+    reading_moderate: {
+      id: "rel:reading-club-moderate",
+      from: "adventure:reading-club",
+      predicate: "containsQuest",
+      target: "quest:reading-club-moderate",
+      questKey: "reading_moderate",
+      meta: {
+        required: true,
+        phase: "durchführung",
+        order: 2,
+        roleId: "documenter",
+        capacity: 1,
+        developmentFields: ["Teamarbeit", "Verantwortung"],
+        locationId: "location:library-corner",
+        schedule: {
+          startsAt: "2026-05-22T09:40:00+02:00",
+          endsAt: "2026-05-22T10:05:00+02:00"
+        }
+      }
+    },
+    reading_share: {
+      id: "rel:reading-club-share",
+      from: "adventure:reading-club",
+      predicate: "containsQuest",
+      target: "quest:reading-club-share",
+      questKey: "reading_share",
+      meta: {
+        required: false,
+        phase: "nachklang",
+        order: 3,
+        roleId: "documenter",
+        capacity: 1,
+        developmentFields: ["Teamarbeit", "Sorgfalt"],
+        locationId: "location:library-corner",
+        schedule: {
+          startsAt: "2026-05-22T10:05:00+02:00",
+          endsAt: "2026-05-22T10:15:00+02:00"
         }
       }
     }
@@ -368,6 +629,7 @@ const DEFAULT_SIMULATION_BUNDLE = {
     selectedTab: "quests",
     selectedView: "overview",
     selectedStepId: null,
+    selectedAdventureId: null,
     selectedStandaloneQuestKey: null,
     adventureRun: null,
     adventureRuns: [],
@@ -484,6 +746,7 @@ function toPrototypeScenario(bundle) {
     confirmers,
     people,
     adventure,
+    adventures: bundle.adventures || { [adventure.id]: adventure },
     quests: bundle.quests || {},
     locations: bundle.locations || {},
     standaloneQuestOffers: bundle.standaloneQuestOffers || {},
