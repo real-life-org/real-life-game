@@ -340,3 +340,7 @@ dann technische Integration,
 dann Prototyp,
 dann konkretes Spiel.
 ```
+
+## Lizenz
+
+Texte: [CC BY 4.0](LICENSE). Der Prototyp in `prototype/`: [MIT](LICENSE-CODE).
